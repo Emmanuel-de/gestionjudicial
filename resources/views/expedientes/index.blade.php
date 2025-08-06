@@ -284,514 +284,88 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Variables globales
-    const expedientesData = @json($expedientes->map(function($expediente) {
+@php
+    $expedientesData = $expedientes->map(function($expediente) {
         return [
             'id' => $expediente->numero_expediente,
             'date' => $expediente->fecha_creacion,
             'type' => $expediente->tipo_documento,
             'description' => $expediente->descripcion ?? '',
-            'files' => []
+            'files' => [
+                [
+                    'name' => 'Documento 1',
+                    'url' => asset('ruta/a/documento1.pdf'), // Ajusta esta ruta a tu lógica real
+                ],
+                [
+                    'name' => 'Documento 2',
+                    'url' => asset('ruta/a/documento2.pdf'),
+                ]
+            ],
         ];
-    }));
-
-    // El resto del JavaScript original aquí...
-    const pdfUploadInput = document.getElementById('pdfUpload');
-    const pdfPreviewIframe = document.getElementById('pdfPreview');
-    const pdfMessage = document.getElementById('pdfMessage');
-
-    const redTab = document.getElementById('redTab');
-    const orangeTab = document.getElementById('orangeTab');
-    const yellowTab = document.getElementById('yellowTab');
-    const greenTab = document.getElementById('greenTab');
-
-    // Elementos de la página izquierda
-    const leftPageTitle = document.getElementById('leftPageTitle');
-    const pageContentExpediente = document.getElementById('pageContentExpediente');
-    const pageContentExpedientesList = document.getElementById('pageContentExpedientesList');
-    const expedientesTableBody = document.getElementById('expedientesTableBody');
-    const pageContentConsultationTreeLeft = document.getElementById('pageContentConsultationTreeLeft');
-    const treeContainer = document.getElementById('treeContainer');
-    const pageContentAlertCalendarLeft = document.getElementById('pageContentAlertCalendarLeft');
-
-    // Elementos de la página derecha
-    const pageContentExpedienteDetailsForm = document.getElementById('pageContentExpedienteDetailsForm');
-    const pageContentExpedienteFilesView = document.getElementById('pageContentExpedienteFilesView');
-    const detailExpedienteNumber = document.getElementById('detailExpedienteNumber');
-    const detailExpedienteDate = document.getElementById('detailExpedienteDate');
-    const filesList = document.getElementById('filesList');
-    const pageContentConsultationTreeRight = document.getElementById('pageContentConsultationTreeRight');
-    const consultationDetailTitle = document.getElementById('consultationDetailTitle');
-    const consultationDetailContent = document.getElementById('consultationDetailContent');
-    const consultationDetailText = document.getElementById('consultationDetailText');
-    const pageContentAlertCalendarRight = document.getElementById('pageContentAlertCalendarRight');
-
-    // Elementos del Calendario de Alertas
-    const receptionDateInput = document.getElementById('receptionDate');
-    const receptionTimeInput = document.getElementById('receptionTime');
-    const alertTypeSelect = document.getElementById('alertTypeSelect');
-    const calculateDeadlineBtn = document.getElementById('calculateDeadlineBtn');
-    const deadlineResultSpan = document.getElementById('deadlineResult');
-    const alertStatusSpan = document.getElementById('alertStatus');
-
-    // Elementos del Mini Calendario
-    const prevMonthBtn = document.getElementById('prevMonthBtn');
-    const nextMonthBtn = document.getElementById('nextMonthBtn');
-    const currentMonthYearSpan = document.getElementById('currentMonthYear');
-    const miniCalendarBody = document.getElementById('miniCalendarBody');
-
-    let currentCalendarDate = new Date();
-
-    // Datos del árbol de consulta
-    const treeData = [
-        {
-            name: 'Expediente Principal',
-            type: 'category',
-            children: [
-                {
-                    name: 'Inculpados',
-                    type: 'category',
-                    children: [
-                        {
-                            name: 'Juan Pérez García',
-                            type: 'inculpado',
-                            details: 'Inculpado en el delito de Robo con Violencia. Fecha de detención: 2023-05-10. Estado: Vinculado a proceso.',
-                            agreements: [
-                                { name: 'Acuerdo de Vinculación a Proceso (2023-05-12)', content: 'Acuerdo que vincula a Juan Pérez a proceso penal por robo con violencia.' },
-                                { name: 'Acuerdo de Medida Cautelar (2023-05-13)', content: 'Acuerdo sobre prisión preventiva justificada.' }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-    ];
-
-    // Reglas de plazo para cada tipo de alerta (en horas)
-    const deadlineRules = {
-        radicacion: 24,
-        incidente: 48,
-        revision: 72,
-        sentencia: 120,
-        caducidad: 720
-    };
-
-    const alertEvents = [
-        { date: '2023-01-15', status: 'in_time', description: 'Radicación EXP-001-2023' },
-        { date: '2023-02-20', status: 'late', description: 'Sentencia EXP-002-2023' }
-    ];
-
-    // Configuración de las páginas
-    const pageConfigurations = [
-        {
-            id: 'expediente_entry',
-            leftContent: pageContentExpediente,
-            leftTitle: 'CONTENIDO DEL EXPEDIENTE',
-            rightContent: pageContentExpedienteDetailsForm
-        },
-        {
-            id: 'expedientes_list_and_details',
-            leftContent: pageContentExpedientesList,
-            leftTitle: 'LISTA DE EXPEDIENTES',
-            rightContent: pageContentExpedienteFilesView
-        },
-        {
-            id: 'consultation_tree',
-            leftContent: pageContentConsultationTreeLeft,
-            leftTitle: 'ÁRBOL DE CONSULTA',
-            rightContent: pageContentConsultationTreeRight
-        },
-        {
-            id: 'alert_calendar',
-            leftContent: pageContentAlertCalendarLeft,
-            leftTitle: 'CALENDARIO DE ALERTAS',
-            rightContent: pageContentAlertCalendarRight
-        }
-    ];
-
-    let currentPageIndex = 0;
-
-    // Función para formatear fechas y horas
-    function formatDateTime(date) {
-        const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false };
-        return date.toLocaleDateString('es-ES', options);
-    }
-
-    // Función para actualizar el contenido de ambas páginas
-    function updateMainContent() {
-        // Ocultar todos los contenedores
-        pageContentExpediente.classList.add('hidden');
-        pageContentExpedientesList.classList.add('hidden');
-        pageContentConsultationTreeLeft.classList.add('hidden');
-        pageContentAlertCalendarLeft.classList.add('hidden');
-        pageContentExpedienteDetailsForm.classList.add('hidden');
-        pageContentExpedienteFilesView.classList.add('hidden');
-        pageContentConsultationTreeRight.classList.add('hidden');
-        pageContentAlertCalendarRight.classList.add('hidden');
-
-        const currentPage = pageConfigurations[currentPageIndex];
-        leftPageTitle.textContent = currentPage.leftTitle;
-        currentPage.leftContent.classList.remove('hidden');
-        currentPage.rightContent.classList.remove('hidden');
-
-        if (currentPage.id === 'expediente_entry') {
-            if (pdfPreviewIframe.src) {
-                pdfPreviewIframe.classList.remove('hidden');
-            }
-        } else {
-            pdfPreviewIframe.classList.add('hidden');
-            pdfPreviewIframe.src = '';
-            pdfUploadInput.value = '';
-        }
-
-        if (currentPage.id === 'expedientes_list_and_details') {
-            clearExpedienteDetails();
-        }
-
-        if (currentPage.id === 'consultation_tree') {
-            renderConsultationTree(treeData, treeContainer);
-            clearConsultationDetails();
-        }
-
-        if (currentPage.id === 'alert_calendar') {
-            const now = new Date();
-            receptionDateInput.value = now.toISOString().split('T')[0];
-            receptionTimeInput.value = now.toTimeString().split(' ')[0].substring(0, 5);
-            deadlineResultSpan.textContent = '--/--/---- --:--';
-            alertStatusSpan.textContent = '';
-            alertStatusSpan.classList.remove('text-black', 'text-red-500');
-            renderMiniCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
-        }
-    }
-
-    // Funciones para selección de expedientes
-    function selectExpediente(expediente) {
-        document.querySelectorAll('.selectable-row').forEach(row => {
-            row.classList.remove('selected');
-        });
-        document.querySelector(`[data-expediente-id="${expediente.id}"]`).classList.add('selected');
-
-        detailExpedienteNumber.textContent = expediente.id;
-        detailExpedienteDate.textContent = expediente.date;
-
-        filesList.innerHTML = '';
-        if (expediente.files && expediente.files.length > 0) {
-            expediente.files.forEach(file => {
-                const listItem = document.createElement('li');
-                listItem.classList.add('text-gray-700', 'p-2', 'bg-gray-50', 'rounded-md', 'flex', 'justify-between', 'items-center', 'shadow-sm');
-                listItem.innerHTML = `
-                    <span>${file.name}</span>
-                    <a href="${file.url}" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm font-semibold">Ver</a>
-                `;
-                filesList.appendChild(listItem);
-            });
-        } else {
-            const listItem = document.createElement('li');
-            listItem.classList.add('text-gray-500', 'text-center', 'py-4');
-            listItem.textContent = 'No hay archivos guardados para este expediente.';
-            filesList.appendChild(listItem);
-        }
-    }
-
-    function clearExpedienteDetails() {
-        detailExpedienteNumber.textContent = '';
-        detailExpedienteDate.textContent = '';
-        filesList.innerHTML = '';
-        document.querySelectorAll('.selectable-row').forEach(row => {
-            row.classList.remove('selected');
-        });
-    }
-
-    // Funciones del árbol de consulta
-    function renderTreeNodes(nodes, parentElement) {
-        const ul = document.createElement('ul');
-        ul.classList.add('tree-node-children');
-        parentElement.appendChild(ul);
-
-        nodes.forEach(node => {
-            const li = document.createElement('li');
-            const nodeDiv = document.createElement('div');
-            nodeDiv.classList.add('tree-node');
-
-            let icon = '';
-            if (node.children && node.children.length > 0) {
-                icon = '<span class="tree-node-icon">►</span>';
-                nodeDiv.classList.add('has-children');
-            } else {
-                icon = '<span class="tree-node-icon"></span>';
-                nodeDiv.classList.add('tree-item-leaf');
-            }
-
-            nodeDiv.innerHTML = `${icon}<span>${node.name}</span>`;
-            li.appendChild(nodeDiv);
-
-            if (node.children && node.children.length > 0) {
-                const childrenUl = renderTreeNodes(node.children, li);
-                childrenUl.classList.add('hidden');
-                nodeDiv.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    childrenUl.classList.toggle('hidden');
-                    const currentIcon = nodeDiv.querySelector('.tree-node-icon');
-                    if (currentIcon) {
-                        currentIcon.textContent = childrenUl.classList.contains('hidden') ? '►' : '▼';
-                    }
-                    if (node.type === 'category') {
-                        clearConsultationDetails();
-                    }
-                });
-            } else {
-                nodeDiv.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    displayConsultationDetails(node);
-                });
-            }
-            ul.appendChild(li);
-        });
-        return ul;
-    }
-
-    function renderConsultationTree(data, container) {
-        container.innerHTML = '';
-        data.forEach(rootNode => {
-            renderTreeNodes([rootNode], container);
-        });
-    }
-
-    function displayConsultationDetails(node) {
-        consultationDetailTitle.textContent = node.name;
-        consultationDetailContent.innerHTML = '';
-
-        if (node.details) {
-            const detailsP = document.createElement('p');
-            detailsP.classList.add('text-gray-700', 'mb-4');
-            detailsP.textContent = node.details;
-            consultationDetailContent.appendChild(detailsP);
-        }
-
-        if (node.agreements && node.agreements.length > 0) {
-            const agreementsTitle = document.createElement('h4');
-            agreementsTitle.classList.add('text-md', 'font-semibold', 'text-gray-800', 'mb-2');
-            agreementsTitle.textContent = 'Acuerdos Generados:';
-            consultationDetailContent.appendChild(agreementsTitle);
-
-            const agreementsUl = document.createElement('ul');
-            agreementsUl.classList.add('list-disc', 'list-inside', 'text-gray-700', 'space-y-1');
-            node.agreements.forEach(agreement => {
-                const li = document.createElement('li');
-                li.textContent = agreement.name;
-                li.classList.add('cursor-pointer', 'hover:text-blue-600');
-                li.addEventListener('click', () => {
-                    alert(`Contenido del Acuerdo "${agreement.name}":\n\n${agreement.content}`);
-                });
-                agreementsUl.appendChild(li);
-            });
-            consultationDetailContent.appendChild(agreementsUl);
-        } else if (!node.details) {
-            const defaultP = document.createElement('p');
-            defaultP.classList.add('text-gray-600');
-            defaultP.textContent = 'No hay detalles disponibles para este elemento.';
-            consultationDetailContent.appendChild(defaultP);
-        }
-    }
-
-    function clearConsultationDetails() {
-        consultationDetailTitle.textContent = 'DETALLES DE LA CONSULTA';
-        consultationDetailContent.innerHTML = '<p class="text-gray-600" id="consultationDetailText">Seleccione un elemento del árbol para ver sus detalles.</p>';
-    }
-
-    // Lógica del Calendario de Alertas
-    calculateDeadlineBtn.addEventListener('click', function() {
-        const receptionDate = receptionDateInput.value;
-        const receptionTime = receptionTimeInput.value;
-        const alertType = alertTypeSelect.value;
-
-        if (!receptionDate || !receptionTime) {
-            deadlineResultSpan.textContent = 'Error: Ingrese fecha y hora de recepción.';
-            alertStatusSpan.textContent = '';
-            alertStatusSpan.classList.remove('text-black', 'text-red-500');
-            return;
-        }
-
-        const receptionDateTime = new Date(`${receptionDate}T${receptionTime}:00`);
-        const deadlineHours = deadlineRules[alertType];
-
-        if (isNaN(receptionDateTime.getTime())) {
-            deadlineResultSpan.textContent = 'Error: Formato de fecha/hora inválido.';
-            alertStatusSpan.textContent = '';
-            alertStatusSpan.classList.remove('text-black', 'text-red-500');
-            return;
-        }
-
-        const deadlineDateTime = new Date(receptionDateTime.getTime() + deadlineHours * 60 * 60 * 1000);
-        const now = new Date();
-
-        deadlineResultSpan.textContent = formatDateTime(deadlineDateTime);
-
-        alertStatusSpan.classList.remove('text-black', 'text-red-500');
-        if (now <= deadlineDateTime) {
-            alertStatusSpan.textContent = 'En tiempo';
-            alertStatusSpan.classList.add('text-black');
-        } else {
-            alertStatusSpan.textContent = 'Fuera de tiempo';
-            alertStatusSpan.classList.add('text-red-500');
-        }
     });
+@endphp
 
-    // Lógica del Mini Calendario
-    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+<script>
+    const expedientesData = @json($expedientesData);
 
-    function renderMiniCalendar(year, month) {
-        miniCalendarBody.innerHTML = '';
+    const treeContainer = document.getElementById("tree-container");
+    const previewIframe = document.getElementById("preview-iframe");
+    const fileName = document.getElementById("file-name");
+    const fileDate = document.getElementById("file-date");
+    const fileType = document.getElementById("file-type");
+    const fileDescription = document.getElementById("file-description");
 
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const numDays = lastDay.getDate();
-        const startDayOfWeek = firstDay.getDay();
+    function createTree(data) {
+        treeContainer.innerHTML = ""; // Limpiar árbol existente
 
-        currentMonthYearSpan.textContent = `${monthNames[month]} ${year}`;
+        data.forEach((expediente) => {
+            const expedienteNode = document.createElement("div");
+            expedienteNode.className = "mb-2";
 
-        let firstDayIndex = (startDayOfWeek === 0) ? 6 : startDayOfWeek - 1;
+            const expedienteTitle = document.createElement("button");
+            expedienteTitle.className =
+                "w-full text-left px-4 py-2 bg-white border border-gray-200 rounded hover:bg-gray-100 font-semibold";
+            expedienteTitle.textContent = "Expediente: " + expediente.id;
+            expedienteTitle.onclick = () => toggleVisibility(expedienteNode);
 
-        const prevMonthLastDay = new Date(year, month, 0).getDate();
-        for (let i = 0; i < firstDayIndex; i++) {
-            const dayCell = document.createElement('div');
-            dayCell.classList.add('calendar-day', 'other-month');
-            dayCell.textContent = prevMonthLastDay - (firstDayIndex - 1) + i;
-            miniCalendarBody.appendChild(dayCell);
-        }
+            expedienteNode.appendChild(expedienteTitle);
 
-        const today = new Date();
-        alertEvents.forEach(event => {
-            event.parsedDate = new Date(event.date + 'T00:00:00');
-        });
+            const filesList = document.createElement("ul");
+            filesList.className = "pl-4 mt-2 hidden";
 
-        for (let day = 1; day <= numDays; day++) {
-            const dayCell = document.createElement('div');
-            dayCell.classList.add('calendar-day', 'current-month');
-            dayCell.textContent = day;
+            expediente.files.forEach((file) => {
+                const fileItem = document.createElement("li");
+                const fileButton = document.createElement("button");
+                fileButton.className =
+                    "text-blue-500 hover:underline text-sm";
+                fileButton.textContent = file.name;
+                fileButton.onclick = () => showFileDetails(file, expediente);
 
-            const currentDayDate = new Date(year, month, day);
-
-            if (currentDayDate.toDateString() === today.toDateString()) {
-                dayCell.classList.add('today');
-            }
-
-            const dayString = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-            const alertsForDay = alertEvents.filter(event => {
-                const eventDateString = event.parsedDate.toISOString().split('T')[0];
-                return eventDateString === dayString;
+                fileItem.appendChild(fileButton);
+                filesList.appendChild(fileItem);
             });
 
-            if (alertsForDay.length > 0) {
-                const hasLateAlert = alertsForDay.some(alert => alert.status === 'late');
-                if (hasLateAlert) {
-                    dayCell.classList.add('has-alert-late');
-                } else {
-                    dayCell.classList.add('has-alert-in-time');
-                }
-                dayCell.title = alertsForDay.map(a => a.description).join('\n');
-            }
+            expedienteNode.appendChild(filesList);
+            treeContainer.appendChild(expedienteNode);
+        });
+    }
 
-            miniCalendarBody.appendChild(dayCell);
-        }
-
-        const totalCells = firstDayIndex + numDays;
-        const remainingCells = 42 - totalCells;
-        for (let i = 1; i <= remainingCells; i++) {
-            const dayCell = document.createElement('div');
-            dayCell.classList.add('calendar-day', 'other-month');
-            dayCell.textContent = i;
-            miniCalendarBody.appendChild(dayCell);
+    function toggleVisibility(node) {
+        const list = node.querySelector("ul");
+        if (list) {
+            list.classList.toggle("hidden");
         }
     }
 
-    prevMonthBtn.addEventListener('click', () => {
-        currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
-        renderMiniCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
-    });
+    function showFileDetails(file, expediente) {
+        previewIframe.src = file.url;
+        fileName.textContent = file.name;
+        fileDate.textContent = expediente.date;
+        fileType.textContent = expediente.type;
+        fileDescription.textContent = expediente.description;
+    }
 
-    nextMonthBtn.addEventListener('click', () => {
-        currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
-        renderMiniCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
-    });
-
-    // Event listeners para las pestañas
-    orangeTab.addEventListener('click', function() {
-        currentPageIndex = 1;
-        updateMainContent();
-    });
-
-    redTab.addEventListener('click', function() {
-        currentPageIndex = 0;
-        updateMainContent();
-    });
-
-    yellowTab.addEventListener('click', function() {
-        currentPageIndex = 2;
-        updateMainContent();
-    });
-
-    greenTab.addEventListener('click', function() {
-        currentPageIndex = 3;
-        updateMainContent();
-    });
-
-    // Event listeners para filas de expedientes
-    document.addEventListener('click', function(e) {
-        if (e.target.closest('.selectable-row')) {
-            const row = e.target.closest('.selectable-row');
-            const expedienteId = row.dataset.expedienteId;
-            const expediente = expedientesData.find(exp => exp.id == expedienteId);
-            if (expediente) {
-                selectExpediente(expediente);
-            }
-        }
-    });
-
-    // Lógica para carga de PDF
-    pdfUploadInput.addEventListener('change', function(event) {
-        const file = event.target.files[0];
-
-        if (file) {
-            if (file.type === 'application/pdf') {
-                const reader = new FileReader();
-
-                reader.onload = function(e) {
-                    pdfPreviewIframe.src = e.target.result;
-                    pdfPreviewIframe.classList.remove('hidden');
-                    pdfMessage.textContent = 'PDF cargado correctamente.';
-                    pdfMessage.classList.remove('text-red-500');
-                    pdfMessage.classList.add('text-green-600');
-                };
-
-                reader.onerror = function() {
-                    pdfMessage.textContent = 'Error al leer el archivo.';
-                    pdfMessage.classList.add('text-red-500');
-                    pdfPreviewIframe.classList.add('hidden');
-                    pdfPreviewIframe.src = '';
-                };
-
-                reader.readAsDataURL(file);
-            } else {
-                pdfMessage.textContent = 'Tipo de archivo no permitido. Por favor, suba un archivo PDF.';
-                pdfMessage.classList.add('text-red-500');
-                pdfMessage.classList.remove('text-green-600');
-                pdfPreviewIframe.classList.add('hidden');
-                pdfPreviewIframe.src = '';
-                pdfUploadInput.value = '';
-            }
-        } else {
-            pdfMessage.textContent = 'Solo archivos .pdf son permitidos.';
-            pdfMessage.classList.remove('text-red-500', 'text-green-600');
-            pdfPreviewIframe.classList.add('hidden');
-            pdfPreviewIframe.src = '';
-        }
-    });
-
-    // Inicializar el contenido de la página
-    updateMainContent();
-});
+    createTree(expedientesData);
 </script>
+
 @endsection

@@ -770,6 +770,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     pdfMessage.textContent = 'Error al leer el archivo.';
                     pdfMessage.classList.add('text-red-500');
                     pdfPreviewIframe.classList.add('hidden');
+                };
+
+                reader.readAsDataURL(file);
+            } else {
+                pdfMessage.textContent = 'Por favor, seleccione un archivo PDF válido.';
+                pdfMessage.classList.add('text-red-500');
+                pdfPreviewIframe.classList.add('hidden');
+            }
+        }
+    });
+});
+</script>
+@endsectionassList.add('hidden');
                     pdfPreviewIframe.src = '';
                 };
 
