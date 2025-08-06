@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DocumentController;
-
+use App\Http\Controllers\PendienteController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -26,7 +26,12 @@ Route::prefix('documents')->name('documents.')->group(function () {
     Route::put('/{document}', [DocumentController::class, 'update'])->name('update');
     Route::delete('/{document}', [DocumentController::class, 'destroy'])->name('destroy');
     Route::get('/search/ajax', [DocumentController::class, 'search'])->name('search');
+    
 });
 
 // Ruta alternativa si prefieres que sea la ruta principal
 // Route::get('/', [DocumentController::class, 'index'])->name('home');
+
+// pendiente
+Route::get('/pendientes', [PendienteController::class, 'index'])->name('pendientes');
+Route::put('/documents/{id}/status', [DocumentController::class, 'updateStatus']);

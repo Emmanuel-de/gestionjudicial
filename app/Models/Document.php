@@ -50,7 +50,7 @@ class Document extends Model
      */
     public function getFormattedReceptionDateAttribute()
     {
-        return $this->reception_date->format('d/m/Y, H:i');
+        return $this->reception_date ? $this->reception_date->format('d/m/Y H:i') : '';
     }
 
     /**
@@ -72,6 +72,7 @@ class Document extends Model
     public function scopeSearch($query, $term)
     {
         return $query->where('code', 'like', "%{$term}%")
-                    ->orWhere('type', 'like', "%{$term}%");
+                    ->orWhere('type', 'like', "%{$term}%")
+                    ->orWhere('status', 'like', "%{$term}%");
     }
 }

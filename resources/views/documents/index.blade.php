@@ -4,34 +4,31 @@
 
 @section('content')
 <div class="bg-gray-100 flex flex-col items-center justify-center min-h-screen">
-    <!-- Contenedor principal de la aplicación -->
     <div class="bg-white rounded-xl shadow-2xl overflow-hidden w-full max-w-5xl mx-4 my-8">
 
-        <!-- Header de la aplicación -->
         <header class="bg-gradient-to-r from-red-700 to-red-900 text-white p-4 flex items-center justify-between rounded-t-xl">
             <h1 class="text-3xl font-bold">Entrega-Recepción</h1>
             <div class="flex space-x-3">
                 <i class="fa-brands fa-facebook-f text-lg hover:text-gray-300 cursor-pointer transition-colors duration-200"></i>
                 <i class="fa-brands fa-twitter text-lg hover:text-gray-300 cursor-pointer transition-colors duration-200"></i>
                 <i class="fa-solid fa-envelope text-lg hover:text-gray-300 cursor-pointer transition-colors duration-200"></i>
-                <!-- Botones de colores -->
-                <button class="w-6 h-6 rounded-full bg-yellow-400 hover:bg-yellow-500 transition-colors duration-200"></button>
+                <a href="{{ route('pendientes') }}">
+    <button class="w-6 h-6 rounded-full bg-yellow-400 hover:bg-yellow-500 transition-colors duration-200"></button>
+</a>
+
                 <button class="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors duration-200"></button>
                 <button class="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors duration-200"></button>
             </div>
         </header>
 
-        <!-- Contenido principal -->
         <main class="p-8">
             <div class="bg-gray-50 rounded-lg p-6 shadow-inner">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Documentos Escaneados</h2>
                 
-                <!-- Mostrar mensajes de éxito/error -->
                 <div id="message-container" class="hidden mb-4">
                     <div id="message" class="p-4 rounded-lg"></div>
                 </div>
 
-                <!-- Tabla de documentos -->
                 <div class="overflow-x-auto rounded-lg border border-gray-200">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-100">
@@ -59,7 +56,6 @@
                     </table>
                 </div>
 
-                <!-- Paginación -->
                 @if($documents->hasPages())
                 <div class="mt-4">
                     {{ $documents->links() }}
@@ -68,9 +64,7 @@
             </div>
         </main>
 
-        <!-- Sección inferior para la búsqueda y botones -->
         <div class="bg-gray-800 p-6 rounded-b-xl flex flex-col md:flex-row items-center justify-between">
-            <!-- Formulario de búsqueda -->
             <div class="flex items-center w-full md:w-auto mb-4 md:mb-0">
                 <div class="relative w-full mr-2">
                     <input type="text" id="search-input" placeholder="Buscar documento por código o tipo..." class="w-full pl-10 pr-4 py-2 rounded-lg text-gray-900 border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
@@ -80,7 +74,6 @@
                 </div>
             </div>
 
-            <!-- Botones de acción -->
             <div class="flex space-x-3">
                 <button id="print-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
                     <i class="fa-solid fa-print"></i>
@@ -98,7 +91,6 @@
         </div>
     </div>
 
-    <!-- Modal para el formulario de registro y edición -->
     <div id="registration-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
             <div class="flex justify-between items-center mb-4">
@@ -202,8 +194,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function clearErrors() {
         ['code-error', 'type-error', 'status-error'].forEach(id => {
             const element = document.getElementById(id);
-            element.classList.add('hidden');
-            element.textContent = '';
+            if (element) {
+                element.classList.add('hidden');
+                element.textContent = '';
+            }
         });
     }
 
@@ -263,16 +257,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para crear una nueva fila
-    function createDocumentRow(document) {
+    function createDocumentRow(doc) {
         const row = document.createElement('tr');
         row.classList.add('document-row', 'cursor-pointer', 'hover:bg-gray-50');
-        row.setAttribute('data-id', document.id);
+        row.setAttribute('data-id', doc.id);
         
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${document.code}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${document.type}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${document.reception_date}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm ${document.status_color_class} font-semibold">${document.status}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${doc.code}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${doc.type}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${doc.reception_date}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm ${doc.status_color_class} font-semibold">${doc.status}</td>
         `;
         
         return row;
@@ -285,26 +279,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         searchTimeout = setTimeout(() => {
-            fetch(`{{ route('documents.search') }}?term=${encodeURIComponent(term)}`, {
+            let url = `{{ route('documents.search') }}?term=${encodeURIComponent(term)}`;
+            
+            // Lógica para recargar la tabla completa si la búsqueda está vacía
+            if (term.length === 0) {
+                url = '{{ route('documents.index') }}';
+            }
+
+            fetch(url, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                 }
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    // Limpiar la tabla
-                    documentList.innerHTML = '';
-                    
-                    if (data.documents.length === 0) {
-                        documentList.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No se encontraron documentos</td></tr>';
-                    } else {
-                        data.documents.forEach(document => {
-                            const row = createDocumentRow(document);
-                            documentList.appendChild(row);
-                        });
-                        attachRowListeners();
-                    }
+                // Si la respuesta no es un objeto con 'documents', probablemente no es la respuesta esperada
+                // En este caso, asumimos que el controlador devuelve una lista de documentos si la búsqueda está vacía
+                const documentsToShow = data.documents || data;
+                
+                // Limpiar la tabla
+                documentList.innerHTML = '';
+                
+                if (documentsToShow.length === 0) {
+                    documentList.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No se encontraron documentos</td></tr>';
+                } else {
+                    documentsToShow.forEach(doc => {
+                        const row = createDocumentRow(doc);
+                        documentList.appendChild(row);
+                    });
+                    attachRowListeners();
                 }
             })
             .catch(error => {
@@ -320,6 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Búsqueda
     searchInput.addEventListener('input', (e) => {
         const term = e.target.value.trim();
+        // Dispara la búsqueda solo si el término tiene 2 o más caracteres, o si está vacío
         if (term.length >= 2 || term.length === 0) {
             searchDocuments(term);
         }
@@ -346,8 +350,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('document-id').value = selectedRow.getAttribute('data-id');
         
         documentCodeInput.value = selectedRow.children[0].textContent;
-        documentTypeInput.value = selectedRow.children[1].textContent;
-        documentStatusInput.value = selectedRow.children[3].textContent;
+        // Se corrigió para seleccionar el tipo y estado correctamente
+        documentTypeInput.value = selectedRow.children[1].textContent.trim();
+        documentStatusInput.value = selectedRow.children[3].textContent.trim();
         
         clearErrors();
         registrationModal.classList.remove('hidden');
