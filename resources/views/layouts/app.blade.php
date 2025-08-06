@@ -47,13 +47,14 @@
         <div class="container mx-auto flex flex-wrap items-center justify-between px-4">
             <!-- Logo -->
             <div class="flex items-center">
-                {{-- La ruta del logo ha sido actualizada para usar la función asset() de Laravel --}}
-                <img src="{{ asset('img/logo.png') }}" alt="Logo" class="mr-4">
-                <div class="text-gray-600 text-sm font-semibold">
-                    PODER JUDICIAL<br>
-                    <span class="font-normal text-xs">-- TAMAULIPAS --</span>
-                </div>
-            </div>
+    <a href="{{ url('/') }}" class="flex items-center">
+        <img src="{{ asset('img/logo.png') }}" alt="Logo" class="mr-4">
+        <div class="text-gray-600 text-sm font-semibold">
+            PODER JUDICIAL<br>
+            <span class="font-normal text-xs">-- TAMAULIPAS --</span>
+        </div>
+    </a>
+</div>
             <!-- Botones de redes sociales -->
             <div class="flex space-x-2 mt-4 md:mt-0">
                 <a href="#" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700"><i class="fab fa-facebook-f"></i></a>

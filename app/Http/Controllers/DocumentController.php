@@ -172,6 +172,53 @@ class DocumentController extends Controller
     }
 
     /**
+     * Actualizar la descripción de un documento.
+     * Este método procesa una solicitud para actualizar solo el campo de descripción.
+     * Valida la nueva descripción y la guarda en la base de datos.
+     */
+    public function updateDescription(Request $request, Document $document): JsonResponse
+    {
+        // Validar que la descripción es una cadena de texto y que no excede el límite.
+        $validator = Validator::make($request->all(), [
+            'description' => 'nullable|string|max:1000',
+        ], [
+            'description.string' => 'La descripción debe ser una cadena de texto.',
+            'description.max' => 'La descripción no puede tener más de 1000 caracteres.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+                'message' => 'Por favor, corrija los errores en el formulario.'
+            ], 422);
+        }
+
+        try {
+            // Actualizar solo el campo de descripción.
+            $document->update([
+                'description' => $request->description,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Descripción del documento actualizada exitosamente.',
+                'document' => [
+                    'id' => $document->id,
+                    'description' => $document->description,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar la descripción. Por favor, inténtelo de nuevo.',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
      * Eliminar un documento
      */
     public function destroy(Document $document): JsonResponse

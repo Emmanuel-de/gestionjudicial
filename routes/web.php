@@ -16,9 +16,7 @@ use App\Http\Controllers\ExpedienteController;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome'); 
-});
+Route::get('/', [DocumentController::class, 'index'])->name('home');
 
 // Rutas para el sistema de documentos
 Route::prefix('documents')->name('documents.')->group(function () {
@@ -44,3 +42,4 @@ Route::get('/expedientes-sistema', [ExpedienteController::class, 'create'])->nam
 Route::get('/api/expedientes/buscar', [ExpedienteController::class, 'buscar'])->name('expedientes.buscar');
 Route::get('/api/expedientes/{expediente}/detalles', [ExpedienteController::class, 'obtenerDetalles'])->name('expedientes.detalles');
 Route::get('/expedientes/{expediente}/descargar-pdf', [ExpedienteController::class, 'descargarPdf'])->name('expedientes.descargar-pdf');
+Route::put('/documents/{document}/description', [DocumentController::class, 'updateDescription']);

@@ -103,7 +103,7 @@
         <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-lg overflow-hidden mt-6 md:mt-8 border border-gray-300">
             <!-- Página izquierda: Contenido dinámico -->
             <div class="flex-1 p-6 md:p-8 bg-white border-r border-gray-200 flex flex-col items-center justify-center">
-                <h2 id="leftPageTitle" class="text-lg md:text-xl font-semibold text-gray-700 mb-4"></h2>
+                <h2 id="leftPageTitle" class="text-lg md:text-xl font-semibold text-gray-700 mb-4">EXPEDIENTES ELECTRÓNICOS</h2>
 
                 <!-- Contenido de la primera página (Expediente Electrónico - Formulario de Carga) -->
                 <div id="pageContentExpediente" class="w-full flex flex-col items-center">
@@ -205,7 +205,7 @@
 
                 <!-- Contenido de la primera página derecha (Formulario de Detalles de Expediente) -->
                 <div id="pageContentExpedienteDetailsForm" class="w-full flex flex-col items-center">
-                    <img src="https://placehold.co/100x100/A0A0A0/FFFFFF?text=LOGO" alt="Logo Institucional" class="mb-4 md:mb-6">
+                    <img src="{{ asset('img/logo.png') }}" alt="Logo Institucional" class="mb-4 md:mb-6">
                     <h1 class="text-xl md:text-2xl font-semibold text-gray-700 text-center mb-6 md:mb-8">
                         EXPEDIENTES ELECTRÓNICOS
                         <br>
@@ -306,66 +306,167 @@
 @endphp
 
 <script>
-    const expedientesData = @json($expedientesData);
+    document.addEventListener('DOMContentLoaded', function() {
+        const leftPageTitle = document.getElementById('leftPageTitle');
+        const contentSectionsLeft = {
+            'red': document.getElementById('pageContentExpediente'),
+            'orange': document.getElementById('pageContentExpedientesList'),
+            'yellow': document.getElementById('pageContentConsultationTreeLeft'),
+            'green': document.getElementById('pageContentAlertCalendarLeft')
+        };
+        const contentSectionsRight = {
+            'red': document.getElementById('pageContentExpedienteDetailsForm'),
+            'orange': document.getElementById('pageContentExpedienteFilesView'),
+            'yellow': document.getElementById('pageContentConsultationTreeRight'),
+            'green': document.getElementById('pageContentAlertCalendarRight')
+        };
 
-    const treeContainer = document.getElementById("tree-container");
-    const previewIframe = document.getElementById("preview-iframe");
-    const fileName = document.getElementById("file-name");
-    const fileDate = document.getElementById("file-date");
-    const fileType = document.getElementById("file-type");
-    const fileDescription = document.getElementById("file-description");
+        const tabTitles = {
+            'red': 'EXPEDIENTES ELECTRÓNICOS',
+            'orange': 'LISTA DE EXPEDIENTES',
+            'yellow': 'ÁRBOL DE CONSULTA',
+            'green': 'CALENDARIO DE ALERTAS'
+        };
 
-    function createTree(data) {
-        treeContainer.innerHTML = ""; // Limpiar árbol existente
+        function showContent(color) {
+            // Oculta todos los contenidos
+            for (const key in contentSectionsLeft) {
+                contentSectionsLeft[key].classList.add('hidden');
+                contentSectionsRight[key].classList.add('hidden');
+            }
+            // Muestra el contenido correspondiente
+            if (contentSectionsLeft[color]) {
+                contentSectionsLeft[color].classList.remove('hidden');
+            }
+            if (contentSectionsRight[color]) {
+                contentSectionsRight[color].classList.remove('hidden');
+            }
 
-        data.forEach((expediente) => {
-            const expedienteNode = document.createElement("div");
-            expedienteNode.className = "mb-2";
-
-            const expedienteTitle = document.createElement("button");
-            expedienteTitle.className =
-                "w-full text-left px-4 py-2 bg-white border border-gray-200 rounded hover:bg-gray-100 font-semibold";
-            expedienteTitle.textContent = "Expediente: " + expediente.id;
-            expedienteTitle.onclick = () => toggleVisibility(expedienteNode);
-
-            expedienteNode.appendChild(expedienteTitle);
-
-            const filesList = document.createElement("ul");
-            filesList.className = "pl-4 mt-2 hidden";
-
-            expediente.files.forEach((file) => {
-                const fileItem = document.createElement("li");
-                const fileButton = document.createElement("button");
-                fileButton.className =
-                    "text-blue-500 hover:underline text-sm";
-                fileButton.textContent = file.name;
-                fileButton.onclick = () => showFileDetails(file, expediente);
-
-                fileItem.appendChild(fileButton);
-                filesList.appendChild(fileItem);
-            });
-
-            expedienteNode.appendChild(filesList);
-            treeContainer.appendChild(expedienteNode);
-        });
-    }
-
-    function toggleVisibility(node) {
-        const list = node.querySelector("ul");
-        if (list) {
-            list.classList.toggle("hidden");
+            // Actualiza el título de la página izquierda
+            leftPageTitle.textContent = tabTitles[color];
         }
-    }
 
-    function showFileDetails(file, expediente) {
-        previewIframe.src = file.url;
-        fileName.textContent = file.name;
-        fileDate.textContent = expediente.date;
-        fileType.textContent = expediente.type;
-        fileDescription.textContent = expediente.description;
-    }
+        // Manejadores de eventos para cada pestaña
+        document.getElementById('redTab').addEventListener('click', () => {
+            showContent('red');
+        });
+        document.getElementById('orangeTab').addEventListener('click', () => {
+            showContent('orange');
+        });
+        document.getElementById('yellowTab').addEventListener('click', () => {
+            showContent('yellow');
+        });
+        document.getElementById('greenTab').addEventListener('click', () => {
+            showContent('green');
+        });
 
-    createTree(expedientesData);
+        // Muestra el contenido de la pestaña roja por defecto al cargar la página
+        showContent('red');
+
+        // Código existente para el árbol de consulta (lo dejé para referencia)
+        const expedientesData = @json($expedientesData);
+        const treeContainer = document.getElementById("treeContainer");
+        const previewIframe = document.getElementById("pdfPreview");
+        const consultationDetailText = document.getElementById("consultationDetailText");
+        const consultationDetailTitle = document.getElementById("consultationDetailTitle");
+
+        function createTree(data) {
+            if (!treeContainer) return;
+
+            treeContainer.innerHTML = ""; // Limpiar árbol existente
+
+            data.forEach((expediente) => {
+                const expedienteNode = document.createElement("div");
+                expedienteNode.className = "mb-2";
+
+                const expedienteTitle = document.createElement("button");
+                expedienteTitle.className = "w-full text-left px-4 py-2 bg-white border border-gray-200 rounded hover:bg-gray-100 font-semibold";
+                expedienteTitle.textContent = "Expediente: " + expediente.id;
+                expedienteTitle.onclick = () => toggleVisibility(expedienteNode);
+
+                expedienteNode.appendChild(expedienteTitle);
+
+                const filesList = document.createElement("ul");
+                filesList.className = "pl-4 mt-2 hidden";
+
+                expediente.files.forEach((file) => {
+                    const fileItem = document.createElement("li");
+                    const fileButton = document.createElement("button");
+                    fileButton.className = "text-blue-500 hover:underline text-sm";
+                    fileButton.textContent = file.name;
+                    fileButton.onclick = () => {
+                        consultationDetailTitle.textContent = file.name;
+                        consultationDetailText.textContent = `Detalles para el documento: ${file.name} del expediente ${expediente.id}.`;
+                    };
+
+                    fileItem.appendChild(fileButton);
+                    filesList.appendChild(fileItem);
+                });
+
+                expedienteNode.appendChild(filesList);
+                treeContainer.appendChild(expedienteNode);
+            });
+        }
+
+        function toggleVisibility(node) {
+            const list = node.querySelector("ul");
+            if (list) {
+                list.classList.toggle("hidden");
+            }
+        }
+
+        // Llamada a la función para crear el árbol cuando se carga la página
+        createTree(expedientesData);
+
+
+        // Código para el calendario (lo dejé para referencia)
+        const miniCalendarBody = document.getElementById('miniCalendarBody');
+        const currentMonthYear = document.getElementById('currentMonthYear');
+        const prevMonthBtn = document.getElementById('prevMonthBtn');
+        const nextMonthBtn = document.getElementById('nextMonthBtn');
+        let currentDate = new Date();
+
+        function renderCalendar() {
+            if (!miniCalendarBody || !currentMonthYear) return;
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            currentMonthYear.textContent = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(currentDate);
+
+            miniCalendarBody.innerHTML = '';
+            const startDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+            for (let i = 0; i < startDayOfWeek; i++) {
+                miniCalendarBody.innerHTML += '<div></div>';
+            }
+
+            for (let i = 1; i <= lastDay.getDate(); i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day current-month';
+                dayDiv.textContent = i;
+                if (year === new Date().getFullYear() && month === new Date().getMonth() && i === new Date().getDate()) {
+                    dayDiv.classList.add('today');
+                }
+                // Aquí podrías agregar lógica para las alertas si tuvieras los datos
+                miniCalendarBody.appendChild(dayDiv);
+            }
+        }
+
+        prevMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        renderCalendar();
+    });
 </script>
-
 @endsection

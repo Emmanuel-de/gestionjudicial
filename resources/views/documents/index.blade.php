@@ -16,7 +16,10 @@
     <button class="w-6 h-6 rounded-full bg-yellow-400 hover:bg-yellow-500 transition-colors duration-200"></button>
 </a>
 
-                <button class="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors duration-200"></button>
+<a href="http://127.0.0.1:8000/expedientes">
+  <button class="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors duration-200"></button>
+</a>
+
                 <button class="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors duration-200"></button>
             </div>
         </header>

@@ -10,13 +10,24 @@ class Document extends Model
 {
     use HasFactory;
 
+    /**
+     * Los atributos que se pueden asignar masivamente.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'code',
         'type',
         'status',
+        'description', // ¡Este es el campo que hemos añadido!
         'reception_date'
     ];
 
+    /**
+     * Los atributos que deben ser casteados.
+     *
+     * @var array
+     */
     protected $casts = [
         'reception_date' => 'datetime',
     ];

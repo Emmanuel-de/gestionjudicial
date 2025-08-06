@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('code')->unique(); // Código del documento
             $table->string('type'); // Tipo de documento (Oficio, Sentencia, Radicación)
             $table->enum('status', ['Recibido', 'Pendiente', 'Actualizar'])->default('Pendiente'); // Estado
+            $table->text('description')->nullable(); // Campo para la descripción
             $table->timestamp('reception_date'); // Fecha de recepción
             $table->timestamps();
         });

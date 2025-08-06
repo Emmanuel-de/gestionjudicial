@@ -11,22 +11,22 @@
             --footer-dark-bg: #c0b094;
             --icon-color: #4a5568;
         }
-        
+
         .selected-row {
             background-color: #dbeafe !important;
             border-left: 4px solid #3b82f6;
         }
-        
+
         .approved-row {
             background-color: #dcfce7;
             border-left: 4px solid #16a34a;
         }
-        
+
         .rejected-row {
             background-color: #fef2f2;
             border-left: 4px solid #dc2626;
         }
-        
+
         .table-row:hover {
             background-color: #f3f4f6;
         }
@@ -63,6 +63,7 @@
                                 @elseif($document->status === 'Actualizar') rejected-row
                                 @endif" 
                                 data-document-id="{{ $document->id }}"
+                                data-document-description="{{ $document->description ?? '' }}"
                                 onclick="selectRow(this, {{ $document->id }})">
                                 
                                 <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -98,7 +99,7 @@
                                         </span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-4 text-sm text-gray-500 max-w-xs truncate">
+                                <td class="px-4 py-4 text-sm text-gray-500 max-w-xs truncate" data-document-description-cell>
                                     {{ $document->description ?? 'Sin descripción' }}
                                 </td>
                             </tr>
@@ -131,8 +132,8 @@
                 </svg>
                 <!-- Campo de entrada de búsqueda -->
                 <input type="text" id="searchInput" placeholder="Buscar documentos..." 
-                       class="flex-grow p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white shadow-sm"
-                       onkeyup="filterDocuments()">
+                        class="flex-grow p-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white shadow-sm"
+                        onkeyup="filterDocuments()">
             </div>
 
             <!-- Información del documento seleccionado -->
@@ -142,8 +143,8 @@
 
             <!-- Sección derecha: Iconos de acción -->
             <div class="flex items-center space-x-3">
-                <!-- Icono de Información -->
-                <button onclick="showInfo()" class="p-2 rounded-full hover:bg-yellow-200 transition-colors duration-200 shadow-sm" style="background-color: var(--footer-dark-bg);" title="Información">
+                <!-- Botón para Agregar/Editar Descripción -->
+                <button id="descriptionBtn" onclick="openDescriptionModal()" disabled class="p-2 rounded-full hover:bg-yellow-200 transition-colors duration-200 shadow-sm opacity-50" style="background-color: var(--footer-dark-bg);" title="Agregar/Editar Descripción">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--icon-color);">
                         <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
                     </svg>
@@ -189,8 +190,29 @@
                     <p class="text-sm text-gray-500" id="modalMessage"></p>
                 </div>
                 <div class="items-center px-4 py-3">
-                    <button onclick="closeModal()" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                    <button onclick="closeModal('messageModal')" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
                         Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVO: Modal para agregar/editar descripción -->
+    <div id="descriptionModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 text-center">Agregar/Editar Descripción</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500 mb-2">Descripción para el documento con ID: <span id="descriptionDocId"></span></p>
+                    <textarea id="descriptionInput" rows="4" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="items-center px-4 py-3 flex justify-end space-x-2">
+                    <button onclick="closeModal('descriptionModal')" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Cancelar
+                    </button>
+                    <button onclick="saveDescription()" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        Guardar
                     </button>
                 </div>
             </div>
@@ -217,12 +239,12 @@ function selectRow(row, documentId) {
     document.getElementById('selectedInfo').classList.remove('hidden');
     
     // Habilitar botones
-    document.getElementById('approveBtn').disabled = false;
-    document.getElementById('rejectBtn').disabled = false;
-    document.getElementById('clearBtn').disabled = false;
-    document.getElementById('approveBtn').classList.remove('opacity-50');
-    document.getElementById('rejectBtn').classList.remove('opacity-50');
-    document.getElementById('clearBtn').classList.remove('opacity-50');
+    const buttons = ['approveBtn', 'rejectBtn', 'clearBtn', 'descriptionBtn'];
+    buttons.forEach(id => {
+        const btn = document.getElementById(id);
+        btn.disabled = false;
+        btn.classList.remove('opacity-50');
+    });
 }
 
 // Función para limpiar selección
@@ -235,12 +257,12 @@ function clearSelection() {
     document.getElementById('selectedInfo').classList.add('hidden');
     
     // Deshabilitar botones
-    document.getElementById('approveBtn').disabled = true;
-    document.getElementById('rejectBtn').disabled = true;
-    document.getElementById('clearBtn').disabled = true;
-    document.getElementById('approveBtn').classList.add('opacity-50');
-    document.getElementById('rejectBtn').classList.add('opacity-50');
-    document.getElementById('clearBtn').classList.add('opacity-50');
+    const buttons = ['approveBtn', 'rejectBtn', 'clearBtn', 'descriptionBtn'];
+    buttons.forEach(id => {
+        const btn = document.getElementById(id);
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+    });
 }
 
 // Función para actualizar el estado del documento
@@ -305,19 +327,60 @@ async function updateDocumentStatus(status) {
     }
 }
 
-// Función para mostrar información
-function showInfo() {
-    const totalDocs = document.querySelectorAll('.table-row').length;
-    const approvedDocs = document.querySelectorAll('.approved-row').length;
-    const rejectedDocs = document.querySelectorAll('.rejected-row').length;
-    const pendingDocs = totalDocs - approvedDocs - rejectedDocs;
-    
-    showMessage('Información', 
-        `Total de documentos: ${totalDocs}\n` +
-        `Aprobados: ${approvedDocs}\n` +
-        `Rechazados: ${rejectedDocs}\n` +
-        `Pendientes: ${pendingDocs}`
-    );
+// NUEVO: Función para abrir el modal de descripción
+function openDescriptionModal() {
+    if (!selectedDocumentId) {
+        showMessage('Error', 'No hay ningún documento seleccionado.');
+        return;
+    }
+
+    // Obtener la descripción actual de la fila seleccionada
+    const row = document.querySelector(`[data-document-id="${selectedDocumentId}"]`);
+    const currentDescription = row.dataset.documentDescription || '';
+
+    // Llenar el modal con la información del documento seleccionado
+    document.getElementById('descriptionDocId').textContent = selectedDocumentId;
+    document.getElementById('descriptionInput').value = currentDescription;
+
+    // Mostrar el modal
+    document.getElementById('descriptionModal').classList.remove('hidden');
+}
+
+// NUEVO: Función para guardar la descripción
+async function saveDescription() {
+    if (!selectedDocumentId) return;
+
+    const description = document.getElementById('descriptionInput').value;
+
+    try {
+        // Debes crear una nueva ruta en Laravel para manejar esta solicitud
+        // Por ejemplo: Route::put('/documents/{id}/description', 'DocumentController@updateDescription');
+        const response = await fetch(`/documents/${selectedDocumentId}/description`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({ description: description })
+        });
+        
+        if (response.ok) {
+            // Actualizar la celda de la descripción en la tabla
+            const row = document.querySelector(`[data-document-id="${selectedDocumentId}"]`);
+            const descriptionCell = row.querySelector('[data-document-description-cell]');
+            descriptionCell.textContent = description || 'Sin descripción';
+            // También actualizamos el data attribute para futuras ediciones
+            row.dataset.documentDescription = description;
+
+            showMessage('Éxito', 'Descripción guardada correctamente.');
+            closeModal('descriptionModal');
+        } else {
+            throw new Error('Error al guardar la descripción');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('Error', 'No se pudo guardar la descripción. Inténtalo de nuevo.');
+    }
 }
 
 // Función para refrescar la página
@@ -348,15 +411,19 @@ function showMessage(title, message) {
 }
 
 // Función para cerrar modal
-function closeModal() {
-    document.getElementById('messageModal').classList.add('hidden');
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
 }
 
 // Cerrar modal al hacer clic fuera de él
 window.onclick = function(event) {
-    const modal = document.getElementById('messageModal');
-    if (event.target === modal) {
-        closeModal();
+    const messageModal = document.getElementById('messageModal');
+    const descriptionModal = document.getElementById('descriptionModal');
+    if (event.target === messageModal) {
+        closeModal('messageModal');
+    }
+    if (event.target === descriptionModal) {
+        closeModal('descriptionModal');
     }
 }
 </script>
