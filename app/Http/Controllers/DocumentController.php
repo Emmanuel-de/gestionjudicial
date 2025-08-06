@@ -249,6 +249,8 @@ class DocumentController extends Controller
             'Recibido' => 'bg-green-100 text-green-800',
             'Pendiente' => 'bg-yellow-100 text-yellow-800',
             'Actualizar' => 'bg-red-100 text-red-800',
+            'approved' => 'bg-green-100 text-green-800',
+            'rejected' => 'bg-red-100 text-red-800',
             default => 'bg-gray-100 text-gray-800'
         };
     }
@@ -260,9 +262,28 @@ class DocumentController extends Controller
         ]);
 
         $document = Document::findOrFail($id);
-        $document->status = $request->status;
+        
+        // Map the frontend status to the backend status
+        $statusMap = [
+            'approved' => 'Recibido',
+            'rejected' => 'Actualizar'
+        ];
+        
+        $document->status = $statusMap[$request->status];
+        $document->reception_date = Carbon::now();
         $document->save();
 
-        return response()->json(['message' => 'Estado actualizado correctamente.']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Estado actualizado correctamente.',
+            'document' => [
+                'id' => $document->id,
+                'code' => $document->code,
+                'type' => $document->type,
+                'status' => $document->status,
+                'reception_date' => $document->formatted_reception_date ?? $document->reception_date->format('d/m/Y H:i'),
+                'status_color_class' => $document->status_color_class ?? $this->getStatusColorClass($document->status)
+            ]
+        ]);
     }
 }

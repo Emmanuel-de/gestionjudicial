@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\PendienteController;
+use App\Http\Controllers\ExpedienteController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -35,3 +37,10 @@ Route::prefix('documents')->name('documents.')->group(function () {
 // pendiente
 Route::get('/pendientes', [PendienteController::class, 'index'])->name('pendientes');
 Route::put('/documents/{id}/status', [DocumentController::class, 'updateStatus']);
+//-----------------------------------------------------------------------------------------
+
+Route::resource('expedientes', ExpedienteController::class);
+Route::get('/expedientes-sistema', [ExpedienteController::class, 'create'])->name('expedientes.sistema');
+Route::get('/api/expedientes/buscar', [ExpedienteController::class, 'buscar'])->name('expedientes.buscar');
+Route::get('/api/expedientes/{expediente}/detalles', [ExpedienteController::class, 'obtenerDetalles'])->name('expedientes.detalles');
+Route::get('/expedientes/{expediente}/descargar-pdf', [ExpedienteController::class, 'descargarPdf'])->name('expedientes.descargar-pdf');
