@@ -288,423 +288,420 @@
 @php
     $expedientesData = $expedientes->map(function($expediente) {
         return [
-            'id' => $expediente->numero_expediente, // Changed from $expediente->id to $expediente->numero_expediente
+            'id' => $expediente->numero_expediente,
             'date' => $expediente->fecha_creacion,
             'type' => $expediente->tipo_documento,
             'description' => $expediente->descripcion ?? '',
-            'files' => $expediente->archivos ? json_decode($expediente->archivos, true) : [], // Assuming 'archivos' is a JSON string
+            'files' => $expediente->archivo_pdf ? [$expediente->archivo_pdf] : [], // Modificación aquí
         ];
     });
 @endphp
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const leftPageTitle = document.getElementById('leftPageTitle');
-        const contentSectionsLeft = {
-            'red': document.getElementById('pageContentExpediente'),
-            'orange': document.getElementById('pageContentExpedientesList'),
-            'yellow': document.getElementById('pageContentConsultationTreeLeft'),
-            'green': document.getElementById('pageContentAlertCalendarLeft')
-        };
-        const contentSectionsRight = {
-            'red': document.getElementById('pageContentExpedienteDetailsForm'),
-            'orange': document.getElementById('pageContentExpedienteFilesView'),
-            'yellow': document.getElementById('pageContentConsultationTreeRight'),
-            'green': document.getElementById('pageContentAlertCalendarRight')
-        };
+   document.addEventListener('DOMContentLoaded', function() {
+    const leftPageTitle = document.getElementById('leftPageTitle');
+    const contentSectionsLeft = {
+        'red': document.getElementById('pageContentExpediente'),
+        'orange': document.getElementById('pageContentExpedientesList'),
+        'yellow': document.getElementById('pageContentConsultationTreeLeft'),
+        'green': document.getElementById('pageContentAlertCalendarLeft')
+    };
+    const contentSectionsRight = {
+        'red': document.getElementById('pageContentExpedienteDetailsForm'),
+        'orange': document.getElementById('pageContentExpedienteFilesView'),
+        'yellow': document.getElementById('pageContentConsultationTreeRight'),
+        'green': document.getElementById('pageContentAlertCalendarRight')
+    };
 
-        const tabTitles = {
-            'red': 'EXPEDIENTES ELECTRÓNICOS',
-            'orange': 'LISTA DE EXPEDIENTES',
-            'yellow': 'ÁRBOL DE CONSULTA',
-            'green': 'CALENDARIO DE ALERTAS'
-        };
+    const tabTitles = {
+        'red': 'EXPEDIENTES ELECTRÓNICOS',
+        'orange': 'LISTA DE EXPEDIENTES',
+        'yellow': 'ÁRBOL DE CONSULTA',
+        'green': 'CALENDARIO DE ALERTAS'
+    };
 
-        function showContent(color) {
-            // Oculta todos los contenidos
-            for (const key in contentSectionsLeft) {
-                contentSectionsLeft[key].classList.add('hidden');
-                contentSectionsRight[key].classList.add('hidden');
-            }
-            // Muestra el contenido correspondiente
-            if (contentSectionsLeft[color]) {
-                contentSectionsLeft[color].classList.remove('hidden');
-            }
-            if (contentSectionsRight[color]) {
-                contentSectionsRight[color].classList.remove('hidden');
-            }
-
-            // Actualiza el título de la página izquierda
-            leftPageTitle.textContent = tabTitles[color];
+    function showContent(color) {
+        // Oculta todos los contenidos
+        for (const key in contentSectionsLeft) {
+            contentSectionsLeft[key].classList.add('hidden');
+            contentSectionsRight[key].classList.add('hidden');
+        }
+        // Muestra el contenido correspondiente
+        if (contentSectionsLeft[color]) {
+            contentSectionsLeft[color].classList.remove('hidden');
+        }
+        if (contentSectionsRight[color]) {
+            contentSectionsRight[color].classList.remove('hidden');
         }
 
-        // Manejadores de eventos para cada pestaña
-        document.getElementById('redTab').addEventListener('click', () => {
-            showContent('red');
-        });
-        document.getElementById('orangeTab').addEventListener('click', () => {
-            showContent('orange');
-        });
-        document.getElementById('yellowTab').addEventListener('click', () => {
-            showContent('yellow');
-        });
-        document.getElementById('greenTab').addEventListener('click', () => {
-            showContent('green');
-        });
+        // Actualiza el título de la página izquierda
+        leftPageTitle.textContent = tabTitles[color];
+    }
 
-        // Muestra el contenido de la pestaña roja por defecto al cargar la página
+    // Manejadores de eventos para cada pestaña
+    document.getElementById('redTab').addEventListener('click', () => {
         showContent('red');
+    });
+    document.getElementById('orangeTab').addEventListener('click', () => {
+        showContent('orange');
+    });
+    document.getElementById('yellowTab').addEventListener('click', () => {
+        showContent('yellow');
+    });
+    document.getElementById('greenTab').addEventListener('click', () => {
+        showContent('green');
+    });
 
-        // Document search functionality
-        const documentSearchInput = document.getElementById('searchInputExpediente');
-        const documentDescription = document.getElementById('textareaExpediente');
-        const fileNumberInput = document.getElementById('numero_expediente');
-        const documentTypeInput = document.getElementById('tipo_documento');
-        const documentDateInput = document.getElementById('fecha_creacion');
-        const searchMessage = document.getElementById('search-message');
-        const registerBtn = document.getElementById('register-btn');
-        const pdfUpload = document.getElementById('pdfUpload');
+    // Muestra el contenido de la pestaña roja por defecto al cargar la página
+    showContent('red');
 
-        let searchTimeout = null;
-        let foundDocument = null;
+    // Document search functionality
+    const documentSearchInput = document.getElementById('searchInputExpediente');
+    const documentDescription = document.getElementById('textareaExpediente');
+    const fileNumberInput = document.getElementById('numero_expediente');
+    const documentTypeInput = document.getElementById('tipo_documento');
+    const documentDateInput = document.getElementById('fecha_creacion');
+    const searchMessage = document.getElementById('search-message');
+    const registerBtn = document.getElementById('register-btn');
+    const pdfUpload = document.getElementById('pdfUpload');
 
-        // Function to show messages
-        function showMessage(text, type = 'success') {
-            searchMessage.textContent = text;
-            searchMessage.className = `mb-4 text-sm ${type === 'success' ? 'text-green-600' : 'text-red-600'}`;
-            searchMessage.classList.remove('hidden');
+    let searchTimeout = null;
+    let foundDocument = null;
 
-            if (type === 'success') {
-                setTimeout(() => {
-                    searchMessage.classList.add('hidden');
-                }, 3000);
-            }
-        }
+    // Function to show messages
+    function showMessage(text, type = 'success') {
+        searchMessage.textContent = text;
+        searchMessage.className = `mb-4 text-sm ${type === 'success' ? 'text-green-600' : 'text-red-600'}`;
+        searchMessage.classList.remove('hidden');
 
-        // Function to clear form fields
-        function clearForm() {
-            documentDescription.value = '';
-            fileNumberInput.value = '';
-            documentTypeInput.value = '';
-            documentDateInput.value = '';
-            registerBtn.disabled = true;
-            foundDocument = null;
-        }
-
-        // Function to fill form with document data
-        function fillForm(document) {
-            documentDescription.value = document.description || '';
-            fileNumberInput.value = document.file_number || '';
-            documentTypeInput.value = document.type || '';
-            documentDateInput.value = document.reception_date || '';
-            registerBtn.disabled = false;
-            foundDocument = document;
-        }
-
-        // Search for document by code
-        function searchDocumentByCode(code) {
-            if (!code.trim()) {
-                clearForm();
+        if (type === 'success') {
+            setTimeout(() => {
                 searchMessage.classList.add('hidden');
-                return;
-            }
+            }, 3000);
+        }
+    }
 
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
-            }
+    // Function to clear form fields
+    function clearForm() {
+        documentDescription.value = '';
+        fileNumberInput.value = '';
+        documentTypeInput.value = '';
+        documentDateInput.value = '';
+        registerBtn.disabled = true;
+        foundDocument = null;
+    }
 
-            searchTimeout = setTimeout(() => {
-                fetch(`{{ url('/documents/search-by-code') }}/${encodeURIComponent(code)}`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.found) {
-                        fillForm(data.document);
-                        showMessage(`Documento encontrado: ${data.document.code}`, 'success');
-                    } else {
-                        clearForm();
-                        showMessage(data.message || 'Documento no encontrado', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    clearForm();
-                    showMessage('Error al buscar el documento', 'error');
-                });
-            }, 500);
+    // Function to fill form with document data
+    function fillForm(document) {
+        documentDescription.value = document.description || '';
+        fileNumberInput.value = document.file_number || '';
+        documentTypeInput.value = document.type || '';
+        documentDateInput.value = document.reception_date || '';
+        registerBtn.disabled = false;
+        foundDocument = document;
+    }
+
+    // Search for document by code
+    function searchDocumentByCode(code) {
+        if (!code.trim()) {
+            clearForm();
+            searchMessage.classList.add('hidden');
+            return;
         }
 
-        // Event listeners
-        documentSearchInput.addEventListener('input', function(e) {
-            const code = e.target.value.trim();
-            searchDocumentByCode(code);
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        searchTimeout = setTimeout(() => {
+            fetch(`{{ url('/documents/search-by-code') }}/${encodeURIComponent(code)}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.found) {
+                    fillForm(data.document);
+                    showMessage(`Documento encontrado: ${data.document.code}`, 'success');
+                } else {
+                    clearForm();
+                    showMessage(data.message || 'Documento no encontrado', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                clearForm();
+                showMessage('Error al buscar el documento', 'error');
+            });
+        }, 500);
+    }
+
+    // Event listeners
+    documentSearchInput.addEventListener('input', function(e) {
+        const code = e.target.value.trim();
+        searchDocumentByCode(code);
+    });
+
+    // Form submission
+    document.getElementById('expedienteForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (!foundDocument) {
+            showMessage('Debe buscar y seleccionar un documento primero', 'error');
+            return;
+        }
+
+        if (!pdfUpload.files[0]) {
+            showMessage('Debe adjuntar un archivo PDF', 'error');
+            return;
+        }
+
+        // Create FormData object to handle file upload
+        const formData = new FormData();
+        formData.append('_token', document.querySelector('input[name="_token"]').value);
+        formData.append('numero_expediente', fileNumberInput.value);
+        formData.append('tipo_documento', documentTypeInput.value);
+        formData.append('fecha_creacion', documentDateInput.value);
+        formData.append('descripcion', documentDescription.value);
+        formData.append('archivo_pdf', pdfUpload.files[0]);
+
+        // Submit form via AJAX
+        fetch('{{ route("expedientes.store") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('Expediente registrado exitosamente', 'success');
+                setTimeout(() => {
+                    documentSearchInput.value = '';
+                    clearForm();
+                    pdfUpload.value = '';
+                    document.getElementById('pdfPreview').classList.add('hidden');
+                }, 2000);
+            } else {
+                showMessage(data.message || 'Error al registrar el expediente', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error al registrar el expediente', 'error');
+        });
+    });
+
+    // PDF preview functionality
+    pdfUpload.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const pdfMessage = document.getElementById('pdfMessage');
+        const pdfPreview = document.getElementById('pdfPreview');
+
+        if (file) {
+            if (file.type === 'application/pdf') {
+                const fileURL = URL.createObjectURL(file);
+                pdfPreview.src = fileURL;
+                pdfPreview.classList.remove('hidden');
+                pdfMessage.textContent = `Archivo seleccionado: ${file.name}`;
+                pdfMessage.className = 'mt-2 text-xs text-green-600';
+            } else {
+                pdfPreview.classList.add('hidden');
+                pdfMessage.textContent = 'Solo archivos .pdf son permitidos.';
+                pdfMessage.className = 'mt-2 text-xs text-red-500';
+                pdfUpload.value = '';
+            }
+        }
+    });
+
+    // Close button
+    document.getElementById('close-btn').addEventListener('click', function() {
+        // En lugar de `confirm()`, se debe usar un modal personalizado.
+        // Aquí se usará una solución simple para este ejemplo.
+        if (window.confirm('¿Está seguro de que desea cerrar? Se perderán todos los datos no guardados.')) {
+            documentSearchInput.value = '';
+            clearForm();
+            pdfUpload.value = '';
+            document.getElementById('pdfPreview').classList.add('hidden');
+            searchMessage.classList.add('hidden');
+        }
+    });
+
+    // Function to handle selecting an expediente and displaying its files
+    function selectExpedienteWithDetails(expediente, row) {
+        // Remove any previously selected row class
+        document.querySelectorAll('.selectable-row').forEach(r => r.classList.remove('selected'));
+        // Add selected class to the current row
+        row.classList.add('selected');
+
+        // Update the expediente details view
+        document.getElementById('detailExpedienteNumber').textContent = expediente.numero_expediente;
+        document.getElementById('detailExpedienteDate').textContent = expediente.fecha_creacion;
+
+        const filesListElement = document.getElementById('filesList');
+        filesListElement.innerHTML = ''; // Clear previous list
+
+        if (expediente.archivo_pdf) {
+            const listItem = document.createElement('li');
+            const fileLink = document.createElement('a');
+            const fileName = expediente.archivo_pdf.split('/').pop();
+            
+            fileLink.href = expediente.archivo_pdf;
+            fileLink.textContent = 'Ver PDF';
+            fileLink.className = 'text-blue-600 hover:underline';
+            fileLink.target = '_blank';
+
+            // Ya no se necesita un event listener para el iframe.
+            // La funcionalidad de abrir en una nueva pestaña es la predeterminada del `target="_blank"`.
+
+            listItem.textContent = fileName;
+            listItem.appendChild(document.createTextNode(' '));
+            listItem.appendChild(fileLink);
+
+            filesListElement.appendChild(listItem);
+        } else {
+            filesListElement.innerHTML = '<li class="text-gray-500">No hay archivos adjuntos para este expediente.</li>';
+        }
+
+        showContent('orange');
+    }
+
+    // Code for the consultation tree
+    const expedientesData = @json($expedientesData);
+    const treeContainer = document.getElementById("treeContainer");
+    const previewIframe = document.getElementById("pdfPreview");
+    const consultationDetailText = document.getElementById("consultationDetailText");
+    const consultationDetailTitle = document.getElementById("consultationDetailTitle");
+
+    function createTree(data) {
+        if (!treeContainer) return;
+
+        treeContainer.innerHTML = "";
+
+        data.forEach((expediente) => {
+            const expedienteNode = document.createElement("div");
+            expedienteNode.className = "mb-2";
+
+            const expedienteTitle = document.createElement("button");
+            expedienteTitle.className = "w-full text-left px-4 py-2 bg-white border border-gray-200 rounded hover:bg-gray-100 font-semibold";
+            expedienteTitle.textContent = "Expediente: " + expediente.id;
+            expedienteTitle.onclick = () => toggleVisibility(expedienteNode);
+
+            expedienteNode.appendChild(expedienteTitle);
+
+            const filesList = document.createElement("ul");
+            filesList.className = "pl-4 mt-2 hidden";
+
+            expediente.files.forEach((file) => {
+                const fileItem = document.createElement("li");
+                const fileButton = document.createElement("button");
+                fileButton.className = "text-blue-500 hover:underline text-sm";
+                fileButton.textContent = file.name;
+                fileButton.onclick = () => {
+                    consultationDetailTitle.textContent = file.name;
+                    consultationDetailText.textContent = `Detalles para el documento: ${file.name} del expediente ${expediente.id}.`;
+                };
+
+                fileItem.appendChild(fileButton);
+                filesList.appendChild(fileItem);
+            });
+
+            expedienteNode.appendChild(filesList);
+            treeContainer.appendChild(expedienteNode);
+        });
+    }
+
+    function toggleVisibility(node) {
+        const list = node.querySelector("ul");
+        if (list) {
+            list.classList.toggle("hidden");
+        }
+    }
+
+    createTree(expedientesData);
+
+    // Code for the calendar
+    const miniCalendarBody = document.getElementById('miniCalendarBody');
+    const currentMonthYear = document.getElementById('currentMonthYear');
+    const prevMonthBtn = document.getElementById('prevMonthBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
+    let currentDate = new Date();
+
+    function renderCalendar() {
+        if (!miniCalendarBody || !currentMonthYear) return;
+
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+
+        currentMonthYear.textContent = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(currentDate);
+
+        miniCalendarBody.innerHTML = '';
+        const startDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+        for (let i = 0; i < startDayOfWeek; i++) {
+            miniCalendarBody.innerHTML += '<div></div>';
+        }
+
+        for (let i = 1; i <= lastDay.getDate(); i++) {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day current-month';
+            dayDiv.textContent = i;
+            if (year === new Date().getFullYear() && month === new Date().getMonth() && i === new Date().getDate()) {
+                dayDiv.classList.add('today');
+            }
+            miniCalendarBody.appendChild(dayDiv);
+        }
+    }
+
+    if (prevMonthBtn && nextMonthBtn) {
+        prevMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
         });
 
-        // Form submission
-        document.getElementById('expedienteForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        nextMonthBtn.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+    }
 
-            if (!foundDocument) {
-                showMessage('Debe buscar y seleccionar un documento primero', 'error');
-                return;
-            }
+    renderCalendar();
 
-            if (!pdfUpload.files[0]) {
-                showMessage('Debe adjuntar un archivo PDF', 'error');
-                return;
-            }
+    // Event listeners para filas de expedientes
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.selectable-row')) {
+            const row = e.target.closest('.selectable-row');
+            const expedienteId = row.dataset.expedienteId;
 
-            // Create FormData object to handle file upload
-            const formData = new FormData();
-            formData.append('_token', document.querySelector('input[name="_token"]').value);
-            formData.append('numero_expediente', fileNumberInput.value);
-            formData.append('tipo_documento', documentTypeInput.value);
-            formData.append('fecha_creacion', documentDateInput.value);
-            formData.append('descripcion', documentDescription.value);
-            formData.append('archivo_pdf', pdfUpload.files[0]);
-
-            // Submit form via AJAX
-            fetch('{{ route("expedientes.store") }}', {
-                method: 'POST',
-                body: formData,
+            // Fetch expediente details via AJAX
+            fetch(`{{ url('/api/expedientes') }}/${expedienteId}/detalles`, {
+                method: 'GET',
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                 }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showMessage('Expediente registrado exitosamente', 'success');
-                    setTimeout(() => {
-                        documentSearchInput.value = '';
-                        clearForm();
-                        pdfUpload.value = '';
-                        document.getElementById('pdfPreview').classList.add('hidden');
-                    }, 2000);
+                    selectExpedienteWithDetails(data.expediente, row);
                 } else {
-                    showMessage(data.message || 'Error al registrar el expediente', 'error');
+                    console.error('Error loading expediente details:', data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showMessage('Error al registrar el expediente', 'error');
-            });
-        });
-
-        // PDF preview functionality
-        pdfUpload.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const pdfMessage = document.getElementById('pdfMessage');
-            const pdfPreview = document.getElementById('pdfPreview');
-
-            if (file) {
-                if (file.type === 'application/pdf') {
-                    const fileURL = URL.createObjectURL(file);
-                    pdfPreview.src = fileURL;
-                    pdfPreview.classList.remove('hidden');
-                    pdfMessage.textContent = `Archivo seleccionado: ${file.name}`;
-                    pdfMessage.className = 'mt-2 text-xs text-green-600';
-                } else {
-                    pdfPreview.classList.add('hidden');
-                    pdfMessage.textContent = 'Solo archivos .pdf son permitidos.';
-                    pdfMessage.className = 'mt-2 text-xs text-red-500';
-                    pdfUpload.value = '';
-                }
-            }
-        });
-
-        // Close button
-        document.getElementById('close-btn').addEventListener('click', function() {
-            if (confirm('¿Está seguro de que desea cerrar? Se perderán todos los datos no guardados.')) {
-                documentSearchInput.value = '';
-                clearForm();
-                pdfUpload.value = '';
-                document.getElementById('pdfPreview').classList.add('hidden');
-                searchMessage.classList.add('hidden');
-            }
-        });
-
-        // Function to handle selecting an expediente and displaying its files
-        function selectExpedienteWithDetails(expediente, row) {
-            // Remove any previously selected row class
-            document.querySelectorAll('.selectable-row').forEach(r => r.classList.remove('selected'));
-            // Add selected class to the current row
-            row.classList.add('selected');
-
-            // Update the expediente details view
-            document.getElementById('detailExpedienteNumber').textContent = expediente.numero_expediente;
-            document.getElementById('detailExpedienteDate').textContent = expediente.fecha_creacion;
-
-            const filesListElement = document.getElementById('filesList');
-            filesListElement.innerHTML = ''; // Clear previous list
-
-            if (expediente.archivos && expediente.archivos.length > 0) {
-                expediente.archivos.forEach(file => {
-                    const listItem = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.href = `/storage/${file.ruta_archivo}`; // Assuming ruta_archivo stores the path relative to storage
-                    link.textContent = file.nombre_archivo;
-                    link.className = 'text-blue-600 hover:underline';
-                    link.target = '_blank'; // Open in new tab
-
-                    // Add click listener to preview PDF in iframe
-                    link.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        const iframe = document.getElementById('pdfPreview');
-                        iframe.src = link.href;
-                        iframe.classList.remove('hidden');
-                        // Optionally, switch to the 'red' tab to show the preview
-                        showContent('red');
-                        document.getElementById('searchInputExpediente').value = expediente.numero_expediente; // Set search input to the expediente number
-                    });
-
-                    listItem.appendChild(link);
-                    filesListElement.appendChild(listItem);
-                });
-            } else {
-                filesListElement.innerHTML = '<li class="text-gray-500">No hay archivos adjuntos para este expediente.</li>';
-            }
-
-            // Switch to the expediente files view
-            showContent('orange');
-        }
-
-        // Code for the consultation tree
-        const expedientesData = @json($expedientesData);
-        const treeContainer = document.getElementById("treeContainer");
-        const previewIframe = document.getElementById("pdfPreview");
-        const consultationDetailText = document.getElementById("consultationDetailText");
-        const consultationDetailTitle = document.getElementById("consultationDetailTitle");
-
-        function createTree(data) {
-            if (!treeContainer) return;
-
-            treeContainer.innerHTML = "";
-
-            data.forEach((expediente) => {
-                const expedienteNode = document.createElement("div");
-                expedienteNode.className = "mb-2";
-
-                const expedienteTitle = document.createElement("button");
-                expedienteTitle.className = "w-full text-left px-4 py-2 bg-white border border-gray-200 rounded hover:bg-gray-100 font-semibold";
-                expedienteTitle.textContent = "Expediente: " + expediente.id;
-                expedienteTitle.onclick = () => toggleVisibility(expedienteNode);
-
-                expedienteNode.appendChild(expedienteTitle);
-
-                const filesList = document.createElement("ul");
-                filesList.className = "pl-4 mt-2 hidden";
-
-                expediente.files.forEach((file) => {
-                    const fileItem = document.createElement("li");
-                    const fileButton = document.createElement("button");
-                    fileButton.className = "text-blue-500 hover:underline text-sm";
-                    fileButton.textContent = file.name;
-                    fileButton.onclick = () => {
-                        consultationDetailTitle.textContent = file.name;
-                        consultationDetailText.textContent = `Detalles para el documento: ${file.name} del expediente ${expediente.id}.`;
-                    };
-
-                    fileItem.appendChild(fileButton);
-                    filesList.appendChild(fileItem);
-                });
-
-                expedienteNode.appendChild(filesList);
-                treeContainer.appendChild(expedienteNode);
             });
         }
-
-        function toggleVisibility(node) {
-            const list = node.querySelector("ul");
-            if (list) {
-                list.classList.toggle("hidden");
-            }
-        }
-
-        createTree(expedientesData);
-
-        // Code for the calendar
-        const miniCalendarBody = document.getElementById('miniCalendarBody');
-        const currentMonthYear = document.getElementById('currentMonthYear');
-        const prevMonthBtn = document.getElementById('prevMonthBtn');
-        const nextMonthBtn = document.getElementById('nextMonthBtn');
-        let currentDate = new Date();
-
-        function renderCalendar() {
-            if (!miniCalendarBody || !currentMonthYear) return;
-
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth();
-
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-
-            currentMonthYear.textContent = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(currentDate);
-
-            miniCalendarBody.innerHTML = '';
-            const startDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-
-            for (let i = 0; i < startDayOfWeek; i++) {
-                miniCalendarBody.innerHTML += '<div></div>';
-            }
-
-            for (let i = 1; i <= lastDay.getDate(); i++) {
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'calendar-day current-month';
-                dayDiv.textContent = i;
-                if (year === new Date().getFullYear() && month === new Date().getMonth() && i === new Date().getDate()) {
-                    dayDiv.classList.add('today');
-                }
-                miniCalendarBody.appendChild(dayDiv);
-            }
-        }
-
-        if (prevMonthBtn && nextMonthBtn) {
-            prevMonthBtn.addEventListener('click', () => {
-                currentDate.setMonth(currentDate.getMonth() - 1);
-                renderCalendar();
-            });
-
-            nextMonthBtn.addEventListener('click', () => {
-                currentDate.setMonth(currentDate.getMonth() + 1);
-                renderCalendar();
-            });
-        }
-
-        renderCalendar();
-
-        // Event listeners para filas de expedientes
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.selectable-row')) {
-                const row = e.target.closest('.selectable-row');
-                const expedienteId = row.dataset.expedienteId;
-
-                // Fetch expediente details via AJAX
-                fetch(`{{ url('/api/expedientes') }}/${expedienteId}/detalles`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        selectExpedienteWithDetails(data.expediente, row);
-                    } else {
-                        console.error('Error loading expediente details:', data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            }
-        });
     });
+});
+
 </script>
 @endsection

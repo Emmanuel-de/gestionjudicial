@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Expedientes Electrónicos</title>
+    <!-- Incluye Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f0f0; /* Fondo gris claro */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        /* Estilos para el iframe de vista previa */
+        .pdf-preview-iframe {
+            width: 100%;
+            height: 300px; /* Altura fija para la vista previa */
+            border: 1px solid #e2e8f0; /* Borde sutil */
+            border-radius: 0.375rem; /* Bordes redondeados */
+            background-color: #f8fafc; /* Fondo claro */
+        }
+        /* Estilo para filas de tabla seleccionables */
+        .selectable-row {
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .selectable-row:hover {
+            background-color: #e2e8f0; /* bg-gray-200 */
+        }
+        .selectable-row.selected {
+            background-color: #bfdbfe; /* bg-blue-200 */
+        }
+        /* Estilos para el árbol de consulta */
+        .tree-node {
+            cursor: pointer;
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            font-size: 0.95rem;
+            color: #4a5568; /* gray-700 */
+        }
+        .tree-node:hover {
+            background-color: #edf2f7; /* gray-100 */
+        }
+        .tree-node-icon {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #2b6cb0; /* blue-700 */
+        }
+        .tree-node-children {
+            margin-left: 20px;
+            list-style: none;
+            padding: 0;
+        }
+        .tree-node-children.hidden {
+            display: none;
+        }
+        .tree-item-leaf {
+            padding-left: 24px; /* Indentación para nodos hoja */
+        }
+        /* Estilos para el mini-calendario */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            text-align: center;
+        }
+        .calendar-day {
+            padding: 4px;
+            font-size: 0.8rem;
+            border-radius: 0.25rem;
+        }
+        .calendar-day.current-month {
+            background-color: #f0f4f8; /* blue-50 */
+        }
+        .calendar-day.other-month {
+            color: #a0aec0; /* gray-400 */
+        }
+        .calendar-day.has-alert-in-time {
+            background-color: #a7f3d0; /* green-200 */
+            font-weight: bold;
+            color: #10b981; /* green-600 */
+        }
+        .calendar-day.has-alert-late {
+            background-color: #fecaca; /* red-200 */
+            font-weight: bold;
+            color: #ef4444; /* red-500 */
+        }
+        .calendar-day.today {
+            border: 1px solid #2563eb; /* blue-600 */
+            background-color: #bfdbfe; /* blue-200 */
+        }
+    </style>
+</head>
+<body class="bg-gray-200">
+    <!-- Contenedor principal del diseño, simulando el borde superior e inferior -->
+    <div class="relative w-full max-w-5xl mx-auto p-4 md:p-8">
+        <!-- Barra superior decorativa -->
+        <div class="absolute top-0 left-0 right-0 h-4 md:h-6 bg-gray-500 rounded-t-lg"></div>
+        <div class="absolute top-4 md:top-6 left-0 right-0 h-2 md:h-3 bg-gray-400"></div>
+
+        <!-- Contenedor del "libro" o "carpeta" -->
+        <div class="flex flex-col md:flex-row bg-white rounded-lg shadow-lg overflow-hidden mt-6 md:mt-8 border border-gray-300">
+            <!-- Página izquierda: Contenido dinámico -->
+            <div class="flex-1 p-6 md:p-8 bg-white border-r border-gray-200 flex flex-col items-center justify-center">
+                <h2 id="leftPageTitle" class="text-lg md:text-xl font-semibold text-gray-700 mb-4"></h2>
+
+                <!-- Contenido de la primera página (Expediente Electrónico - Formulario de Carga) -->
+                <div id="pageContentExpediente" class="w-full flex flex-col items-center">
+                    <!-- Campo de entrada para búsqueda de documentos o número de documento -->
+                    <input type="text" id="searchInputExpediente" class="w-2/3 md:w-1/2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6 md:mb-8" placeholder="Buscar documento...">
+                    <!-- Área de texto grande para descripción o vista previa del documento -->
+                    <textarea id="textareaExpediente" class="w-full h-48 md:h-64 p-3 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6" placeholder="Descripción detallada del documento..."></textarea>
+
+                    <!-- Sección para Cargar PDF y Vista Previa -->
+                    <div id="pdfUploadSection" class="w-full flex flex-col items-center mt-4 p-4 border border-dashed border-gray-400 rounded-md bg-gray-50">
+                        <h3 class="text-md md:text-lg font-medium text-gray-600 mb-3">ADJUNTAR DOCUMENTO PDF</h3>
+                        <input type="file" id="pdfUpload" accept=".pdf" class="block w-full text-sm text-gray-500
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-full file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-blue-50 file:text-blue-700
+                            hover:file:bg-blue-100"
+                        />
+                        <p class="mt-2 text-xs text-gray-500" id="pdfMessage">Solo archivos .pdf son permitidos.</p>
+
+                        <!-- Iframe para la vista previa del PDF -->
+                        <iframe id="pdfPreview" class="pdf-preview-iframe mt-4 hidden" title="Vista previa de PDF"></iframe>
+                    </div>
+                </div>
+
+                <!-- Contenido de la segunda página (Lista de Expedientes) -->
+                <div id="pageContentExpedientesList" class="w-full flex flex-col items-center hidden">
+                    <h3 class="text-md md:text-lg font-medium text-gray-600 mb-4">LISTA DE EXPEDIENTES CREADOS</h3>
+                    <div class="w-full overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-300 rounded-md shadow-sm">
+                            <thead>
+                                <tr class="bg-gray-100 border-b border-gray-300">
+                                    <th class="py-2 px-4 text-left text-sm font-semibold text-gray-600">Número de Expediente</th>
+                                    <th class="py-2 px-4 text-left text-sm font-semibold text-gray-600">Fecha de Creación</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expedientesTableBody">
+                                <!-- Filas de expedientes se insertarán aquí por JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Contenido de la tercera página (Árbol de Consulta - Izquierda) -->
+                <div id="pageContentConsultationTreeLeft" class="w-full flex flex-col items-start hidden">
+                    <h3 class="text-md md:text-lg font-medium text-gray-600 mb-4">Navegación del Expediente</h3>
+                    <div id="treeContainer" class="w-full bg-white border border-gray-300 rounded-md p-4 overflow-y-auto" style="max-height: 500px;">
+                        <!-- El árbol se renderizará aquí por JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Nuevo: Contenido de la página izquierda de Alerta Calendar -->
+                <div id="pageContentAlertCalendarLeft" class="w-full flex flex-col items-center hidden p-4">
+                    <h3 class="text-md md:text-lg font-medium text-gray-600 mb-4">CALENDARIO DE ALERTAS</h3>
+                    <div class="w-full max-w-sm bg-white p-6 rounded-lg shadow-md space-y-4">
+                        <div>
+                            <label for="receptionDate" class="block text-sm font-medium text-gray-700">Fecha de Recepción:</label>
+                            <input type="date" id="receptionDate" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="receptionTime" class="block text-sm font-medium text-gray-700">Hora de Recepción:</label>
+                            <input type="time" id="receptionTime" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="alertTypeSelect" class="block text-sm font-medium text-gray-700">Tipo de Alerta:</label>
+                            <select id="alertTypeSelect" class="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="radicacion">Radicación (24h)</option>
+                                <option value="incidente">Incidente</option>
+                                <option value="revision">Revisión</option>
+                                <option value="sentencia">Sentencia</option>
+                                <option value="caducidad">Caducidad</option>
+                            </select>
+                        </div>
+                        <button id="calculateDeadlineBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 ease-in-out">
+                            Calcular Fecha Límite
+                        </button>
+                        <div id="alertResult" class="mt-4 p-3 border rounded-md bg-gray-50 text-center">
+                            <p class="text-sm font-medium text-gray-700">Fecha Límite: <span id="deadlineResult" class="font-bold">--/--/---- --:--</span></p>
+                            <p class="text-sm font-medium">Estado: <span id="alertStatus" class="font-bold"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Página derecha: Contenido dinámico -->
+            <div class="flex-1 p-6 md:p-8 bg-white relative flex flex-col items-center">
+                <!-- Pestañas de colores (pueden representar categorías o estados) -->
+                <div class="absolute top-0 right-0 h-full flex flex-col justify-evenly">
+                    <div class="w-4 h-1/4 bg-red-500 rounded-l-md cursor-pointer" id="redTab"></div>
+                    <div class="w-4 h-1/4 bg-orange-500 rounded-l-md cursor-pointer" id="orangeTab"></div>
+                    <div class="w-4 h-1/4 bg-yellow-500 rounded-l-md cursor-pointer" id="yellowTab"></div>
+                    <div class="w-4 h-1/4 bg-green-500 rounded-l-md cursor-pointer" id="greenTab"></div>
+                </div>
+
+                <!-- Contenido de la primera página derecha (Formulario de Detalles de Expediente) -->
+                <div id="pageContentExpedienteDetailsForm" class="w-full flex flex-col items-center">
+                    <!-- Puedes reemplazar este placeholder con el logo de tu institución si aplica -->
+                    <img src="https://placehold.co/100x100/A0A0A0/FFFFFF?text=LOGO" alt="Logo Institucional" class="mb-4 md:mb-6">
+                    <h1 class="text-xl md:text-2xl font-semibold text-gray-700 text-center mb-6 md:mb-8">
+                        EXPEDIENTES ELECTRÓNICOS
+                        <br>
+                        <span class="text-lg md:text-xl font-normal text-gray-500">— GESTIÓN DOCUMENTAL —</span>
+                    </h1>
+
+                    <!-- Campos de entrada para detalles del expediente -->
+                    <input type="text" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Número de Expediente">
+                    <input type="text" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Tipo de Documento">
+                    <input type="text" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6 md:mb-8" placeholder="Fecha de Creación (DD/MM/AAAA)">
+
+                    <!-- Contenedor para los botones -->
+                    <div class="flex space-x-4">
+                        <!-- Botón REGISTRAR -->
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition duration-300 ease-in-out">
+                            REGISTRAR
+                        </button>
+                        <!-- Botón CERRAR / Volver -->
+                        <button class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition duration-300 ease-in-out">
+                            CERRAR
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contenido de la segunda página derecha (Datos del Expediente y Archivos) -->
+                <div id="pageContentExpedienteFilesView" class="w-full flex flex-col items-center hidden">
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-700 text-center mb-4">DETALLES DEL EXPEDIENTE</h2>
+                    <p class="text-gray-600 mb-4 text-center">Número: <span id="detailExpedienteNumber" class="font-bold"></span></p>
+                    <p class="text-gray-600 mb-6 text-center">Fecha: <span id="detailExpedienteDate" class="font-bold"></span></p>
+
+                    <h3 class="text-lg md:text-xl font-semibold text-gray-700 mb-4">ARCHIVOS GUARDADOS</h3>
+                    <ul id="filesList" class="w-full bg-white border border-gray-300 rounded-md p-4 space-y-2">
+                        <!-- Los archivos se insertarán aquí por JavaScript -->
+                    </ul>
+                </div>
+
+                <!-- Contenido de la tercera página (Detalles del Árbol de Consulta - Derecha) -->
+                <div id="pageContentConsultationTreeRight" class="w-full flex flex-col items-center hidden">
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-700 text-center mb-4" id="consultationDetailTitle"></h2>
+                    <div id="consultationDetailContent" class="w-full bg-white border border-gray-300 rounded-md p-6 overflow-y-auto" style="min-height: 200px; max-height: 400px;">
+                        <!-- Los detalles del nodo seleccionado se mostrarán aquí -->
+                        <p class="text-gray-600" id="consultationDetailText">Seleccione un elemento del árbol para ver sus detalles.</p>
+                    </div>
+                </div>
+
+                <!-- Nuevo: Contenido de la página derecha de Alerta Calendar -->
+                <div id="pageContentAlertCalendarRight" class="w-full flex flex-col items-center hidden p-4">
+                    <h2 class="text-xl md:text-2xl font-semibold text-gray-700 text-center mb-4">PROCESO DE REVISIÓN Y LIBERACIÓN</h2>
+                    <p class="text-gray-600 text-center leading-relaxed">
+                        Los documentos de la pantalla anterior son revisados y se complementan con información adicional.
+                        Después de esta acción, se libera el registro y aparecerá como trabajo pendiente.
+                    </p>
+                    <div class="mt-8 p-4 bg-yellow-100 border border-yellow-300 rounded-md text-yellow-800">
+                        <p class="font-semibold">Estado Actual:</p>
+                        <p>Trabajo Pendiente: Esperando Liberación</p>
+                    </div>
+
+                    <!-- Mini Calendario de Alertas -->
+                    <div class="w-full max-w-xs bg-white p-4 rounded-lg shadow-md mt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <button id="prevMonthBtn" class="text-gray-600 hover:text-gray-900 font-bold">&lt;</button>
+                            <h4 id="currentMonthYear" class="text-lg font-semibold text-gray-800"></h4>
+                            <button id="nextMonthBtn" class="text-gray-600 hover:text-gray-900 font-bold">&gt;</button>
+                        </div>
+                        <div class="calendar-grid font-bold text-sm text-gray-700 mb-2">
+                            <span>Lun</span>
+                            <span>Mar</span>
+                            <span>Mié</span>
+                            <span>Jue</span>
+                            <span>Vie</span>
+                            <span>Sáb</span>
+                            <span>Dom</span>
+                        </div>
+                        <div id="miniCalendarBody" class="calendar-grid">
+                            <!-- Los días del calendario se insertarán aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra inferior decorativa -->
+        <div class="absolute bottom-0 left-0 right-0 h-4 md:h-6 bg-gray-700 rounded-b-lg"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const pdfUploadInput = document.getElementById('pdfUpload');
+            const pdfPreviewIframe = document.getElementById('pdfPreview');
+            const pdfMessage = document.getElementById('pdfMessage');
+
+            const redTab = document.getElementById('redTab');
+            const orangeTab = document.getElementById('orangeTab');
+            const yellowTab = document.getElementById('yellowTab');
+            const greenTab = document.getElementById('greenTab');
+
+            // Elementos de la página izquierda
+            const leftPageTitle = document.getElementById('leftPageTitle');
+            const pageContentExpediente = document.getElementById('pageContentExpediente');
+            const pageContentExpedientesList = document.getElementById('pageContentExpedientesList');
+            const expedientesTableBody = document.getElementById('expedientesTableBody');
+            const pageContentConsultationTreeLeft = document.getElementById('pageContentConsultationTreeLeft');
+            const treeContainer = document.getElementById('treeContainer');
+            const pageContentAlertCalendarLeft = document.getElementById('pageContentAlertCalendarLeft');
+
+            // Elementos de la página derecha
+            const pageContentExpedienteDetailsForm = document.getElementById('pageContentExpedienteDetailsForm');
+            const pageContentExpedienteFilesView = document.getElementById('pageContentExpedienteFilesView');
+            const detailExpedienteNumber = document.getElementById('detailExpedienteNumber');
+            const detailExpedienteDate = document.getElementById('detailExpedienteDate');
+            const filesList = document.getElementById('filesList');
+            const pageContentConsultationTreeRight = document.getElementById('pageContentConsultationTreeRight');
+            const consultationDetailTitle = document.getElementById('consultationDetailTitle');
+            const consultationDetailContent = document.getElementById('consultationDetailContent');
+            const consultationDetailText = document.getElementById('consultationDetailText');
+            const pageContentAlertCalendarRight = document.getElementById('pageContentAlertCalendarRight');
+
+            // Elementos del Calendario de Alertas
+            const receptionDateInput = document.getElementById('receptionDate');
+            const receptionTimeInput = document.getElementById('receptionTime');
+            const alertTypeSelect = document.getElementById('alertTypeSelect');
+            const calculateDeadlineBtn = document.getElementById('calculateDeadlineBtn');
+            const deadlineResultSpan = document.getElementById('deadlineResult');
+            const alertStatusSpan = document.getElementById('alertStatus');
+
+            // Elementos del Mini Calendario
+            const prevMonthBtn = document.getElementById('prevMonthBtn');
+            const nextMonthBtn = document.getElementById('nextMonthBtn');
+            const currentMonthYearSpan = document.getElementById('currentMonthYear');
+            const miniCalendarBody = document.getElementById('miniCalendarBody');
+
+            let currentCalendarDate = new Date(); // Fecha actual para el mini calendario
+
+            // Datos de ejemplo para expedientes y sus archivos
+            const expedientesData = [
+                {
+                    id: 'EXP-001-2023',
+                    date: '2023-01-15',
+                    type: 'Demanda Civil',
+                    description: 'Demanda por incumplimiento de contrato.',
+                    files: [
+                        { name: 'Demanda_Inicial.pdf', url: 'https://www.africau.edu/images/default/sample.pdf' },
+                        { name: 'Poder_Notarial.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }
+                    ]
+                },
+                {
+                    id: 'EXP-002-2023',
+                    date: '2023-02-20',
+                    type: 'Amparo Indirecto',
+                    description: 'Amparo contra acto de autoridad.',
+                    files: [
+                        { name: 'Escrito_Amparo.pdf', url: 'https://www.africau.edu/images/default/sample.pdf' },
+                        { name: 'Pruebas_Anexas.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' },
+                        { name: 'Identificacion_Demandante.pdf', url: 'https://www.africau.edu/images/default/sample.pdf' }
+                    ]
+                },
+                {
+                    id: 'EXP-003-2023',
+                    date: '2023-03-10',
+                    type: 'Juicio Mercantil',
+                    description: 'Cobro de pagaré.',
+                    files: [
+                        { name: 'Pagaré.pdf', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' }
+                    ]
+                }
+            ];
+
+            // Datos de ejemplo para el árbol de consulta
+            const treeData = [
+                {
+                    name: 'Expediente Principal',
+                    type: 'category',
+                    children: [
+                        {
+                            name: 'Inculpados',
+                            type: 'category',
+                            children: [
+                                {
+                                    name: 'Juan Pérez García',
+                                    type: 'inculpado',
+                                    details: 'Inculpado en el delito de Robo con Violencia. Fecha de detención: 2023-05-10. Estado: Vinculado a proceso.',
+                                    agreements: [
+                                        { name: 'Acuerdo de Vinculación a Proceso (2023-05-12)', content: 'Acuerdo que vincula a Juan Pérez a proceso penal por robo con violencia.' },
+                                        { name: 'Acuerdo de Medida Cautelar (2023-05-13)', content: 'Acuerdo sobre prisión preventiva justificada.' }
+                                    ]
+                                },
+                                {
+                                    name: 'María López Solís',
+                                    type: 'inculpado',
+                                    details: 'Inculpada en el delito de Fraude. Fecha de detención: 2023-06-01. Estado: Suspensión condicional.',
+                                    agreements: [
+                                        { name: 'Acuerdo de Suspensión Condicional (2023-06-05)', content: 'Acuerdo sobre suspensión condicional del proceso.' }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            name: 'Ofendidos',
+                            type: 'category',
+                            children: [
+                                { name: 'Comercio "La Esquina"', type: 'ofendido', details: 'Afectado por robo con violencia. Monto del daño estimado: $5,000 MXN.' },
+                                { name: 'Banco Central', type: 'ofendido', details: 'Afectado por fraude bancario. Monto del fraude: $15,000 MXN.' }
+                            ]
+                        },
+                        {
+                            name: 'Delitos',
+                            type: 'category',
+                            children: [
+                                { name: 'Robo con Violencia', type: 'delito', details: 'Artículo 220 del Código Penal del Estado. Pena de 5 a 10 años de prisión.' },
+                                { name: 'Fraude', type: 'delito', details: 'Artículo 230 del Código Penal del Estado. Pena de 2 a 7 años de prisión.' }
+                            ]
+                        },
+                        {
+                            name: 'Etapas Procesales',
+                            type: 'category',
+                            children: [
+                                { name: 'Investigación Inicial', type: 'etapa', details: 'Fase de recolección de pruebas, entrevistas y formulación de imputación.' },
+                                { name: 'Intermedia', type: 'etapa', details: 'Fase de preparación del juicio oral, depuración de pruebas.' },
+                                { name: 'Juicio Oral', type: 'etapa', details: 'Fase de desahogo de pruebas, alegatos y sentencia.' }
+                            ]
+                        },
+                        {
+                            name: 'Objetos de Delito',
+                            type: 'category',
+                            children: [
+                                { name: 'Dinero en Efectivo', type: 'objeto', details: 'Objeto de robo en el caso de Juan Pérez. Cantidad aproximada: $3,000 MXN.' },
+                                { name: 'Documentos Falsificados', type: 'objeto', details: 'Objeto de fraude en el caso de María López. Documentos bancarios falsos.' }
+                            ]
+                        }
+                    ]
+                }
+            ];
+
+            // Reglas de plazo para cada tipo de alerta (en horas)
+            const deadlineRules = {
+                radicacion: 24, // 24 horas para radicación
+                incidente: 48, // Ejemplo: 48 horas para incidentes
+                revision: 72,  // Ejemplo: 72 horas para revisión
+                sentencia: 120, // Ejemplo: 120 horas (5 días) para sentencia
+                caducidad: 720 // Ejemplo: 720 horas (30 días) para caducidad
+            };
+
+            // Sample alert events for the calendar (date format YYYY-MM-DD)
+            const alertEvents = [
+                { date: '2023-01-15', status: 'in_time', description: 'Radicación EXP-001-2023' },
+                { date: '2023-02-20', status: 'late', description: 'Sentencia EXP-002-2023' },
+                { date: '2023-03-10', status: 'in_time', description: 'Revisión EXP-003-2023' },
+                { date: '2023-08-01', status: 'in_time', description: 'Incidente Pendiente' },
+                { date: '2023-08-05', status: 'late', description: 'Caducidad Vencida' },
+                { date: '2023-08-10', status: 'in_time', description: 'Nueva Radicación' },
+                { date: '2023-08-15', status: 'late', description: 'Sentencia Pendiente' }
+            ];
+
+            // Configuración de las páginas
+            const pageConfigurations = [
+                {
+                    // Página 0: Formulario de Expediente (Izquierda) y Detalles de Expediente (Derecha)
+                    id: 'expediente_entry',
+                    leftContent: pageContentExpediente,
+                    leftTitle: 'CONTENIDO DEL EXPEDIENTE',
+                    rightContent: pageContentExpedienteDetailsForm,
+                    rightTitle: 'EXPEDIENTES ELECTRÓNICOS',
+                    rightSubtitle: '— GESTIÓN DOCUMENTAL —'
+                },
+                {
+                    // Página 1: Lista de Expedientes (Izquierda) y Vista de Archivos (Derecha)
+                    id: 'expedientes_list_and_details',
+                    leftContent: pageContentExpedientesList,
+                    leftTitle: 'LISTA DE EXPEDIENTES',
+                    rightContent: pageContentExpedienteFilesView,
+                    rightTitle: 'DETALLES DEL EXPEDIENTE',
+                    rightSubtitle: '— ARCHIVOS ASOCIADOS —'
+                },
+                {
+                    // Página 2: Árbol de Consulta (Izquierda) y Detalles de Consulta (Derecha)
+                    id: 'consultation_tree',
+                    leftContent: pageContentConsultationTreeLeft,
+                    leftTitle: 'ÁRBOL DE CONSULTA',
+                    rightContent: pageContentConsultationTreeRight,
+                    rightTitle: 'DETALLES DE LA CONSULTA',
+                    rightSubtitle: ''
+                },
+                {
+                    // Página 3: Calendario de Alertas (Izquierda) y Proceso de Revisión (Derecha)
+                    id: 'alert_calendar',
+                    leftContent: pageContentAlertCalendarLeft,
+                    leftTitle: 'CALENDARIO DE ALERTAS',
+                    rightContent: pageContentAlertCalendarRight,
+                    rightTitle: 'PROCESO DE REVISIÓN Y LIBERACIÓN',
+                    rightSubtitle: ''
+                }
+            ];
+
+            let currentPageIndex = 0; // 0 para el formulario, 1 para la lista/detalles, 2 para el árbol, 3 para el calendario
+
+            // Función para formatear fechas y horas
+            function formatDateTime(date) {
+                const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false };
+                return date.toLocaleDateString('es-ES', options);
+            }
+
+            // Función para actualizar el contenido de ambas páginas
+            function updateMainContent() {
+                // Ocultar todos los posibles contenedores de contenido primero
+                pageContentExpediente.classList.add('hidden');
+                pageContentExpedientesList.classList.add('hidden');
+                pageContentConsultationTreeLeft.classList.add('hidden');
+                pageContentAlertCalendarLeft.classList.add('hidden');
+
+                pageContentExpedienteDetailsForm.classList.add('hidden');
+                pageContentExpedienteFilesView.classList.add('hidden');
+                pageContentConsultationTreeRight.classList.add('hidden');
+                pageContentAlertCalendarRight.classList.add('hidden');
+
+                const currentPage = pageConfigurations[currentPageIndex];
+
+                // Actualizar título de la página izquierda
+                leftPageTitle.textContent = currentPage.leftTitle;
+
+                // Mostrar el contenido de la página actual
+                currentPage.leftContent.classList.remove('hidden');
+                currentPage.rightContent.classList.remove('hidden');
+
+                // Lógica específica para la página de entrada de expediente (PDF y campos)
+                if (currentPage.id === 'expediente_entry') {
+                    pdfUploadInput.classList.remove('hidden');
+                    pdfMessage.classList.remove('hidden');
+                    if (pdfPreviewIframe.src) {
+                        pdfPreviewIframe.classList.remove('hidden');
+                    }
+                } else {
+                    // Si no es la página de entrada, ocultar elementos relacionados con PDF
+                    pdfUploadInput.classList.add('hidden');
+                    pdfMessage.classList.add('hidden');
+                    pdfPreviewIframe.classList.add('hidden');
+                    pdfPreviewIframe.src = '';
+                    pdfUploadInput.value = '';
+                }
+
+                // Lógica específica para la página de lista/detalles de expedientes
+                if (currentPage.id === 'expedientes_list_and_details') {
+                    renderExpedientesTable();
+                    clearExpedienteDetails(); // Limpiar detalles al cambiar a la vista de lista
+                }
+
+                // Lógica específica para la página del árbol de consulta
+                if (currentPage.id === 'consultation_tree') {
+                    renderConsultationTree(treeData, treeContainer);
+                    clearConsultationDetails(); // Limpiar detalles al cambiar a la vista de árbol
+                }
+
+                // Lógica específica para el Calendario de Alertas
+                if (currentPage.id === 'alert_calendar') {
+                    // Inicializar los campos de fecha/hora aquí con la fecha/hora actual
+                    const now = new Date();
+                    receptionDateInput.value = now.toISOString().split('T')[0];
+                    receptionTimeInput.value = now.toTimeString().split(' ')[0].substring(0, 5);
+                    deadlineResultSpan.textContent = '--/--/---- --:--';
+                    alertStatusSpan.textContent = '';
+                    alertStatusSpan.classList.remove('text-black', 'text-red-500');
+                    renderMiniCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+                }
+            }
+
+            // Función para renderizar la tabla de expedientes
+            function renderExpedientesTable() {
+                expedientesTableBody.innerHTML = ''; // Limpiar tabla existente
+                expedientesData.forEach(expediente => {
+                    const row = document.createElement('tr');
+                    row.classList.add('border-b', 'border-gray-200', 'selectable-row');
+                    row.dataset.expedienteId = expediente.id; // Guardar el ID para fácil acceso
+
+                    row.innerHTML = `
+                        <td class="py-2 px-4 text-sm text-gray-700">${expediente.id}</td>
+                        <td class="py-2 px-4 text-sm text-gray-700">${expediente.date}</td>
+                    `;
+                    row.addEventListener('click', () => selectExpediente(expediente));
+                    expedientesTableBody.appendChild(row);
+                });
+            }
+
+            // Función para seleccionar un expediente y mostrar sus detalles
+            function selectExpediente(expediente) {
+                // Remover la clase 'selected' de todas las filas y añadirla a la fila clicada
+                document.querySelectorAll('.selectable-row').forEach(row => {
+                    row.classList.remove('selected');
+                });
+                document.querySelector(`[data-expediente-id="${expediente.id}"]`).classList.add('selected');
+
+                detailExpedienteNumber.textContent = expediente.id;
+                detailExpedienteDate.textContent = expediente.date;
+
+                filesList.innerHTML = ''; // Limpiar lista de archivos
+                if (expediente.files && expediente.files.length > 0) {
+                    expediente.files.forEach(file => {
+                        const listItem = document.createElement('li');
+                        listItem.classList.add('text-gray-700', 'p-2', 'bg-gray-50', 'rounded-md', 'flex', 'justify-between', 'items-center', 'shadow-sm');
+                        listItem.innerHTML = `
+                            <span>${file.name}</span>
+                            <a href="${file.url}" target="_blank" class="text-blue-500 hover:text-blue-700 text-sm font-semibold">Ver</a>
+                        `;
+                        filesList.appendChild(listItem);
+                    });
+                } else {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('text-gray-500', 'text-center', 'py-4');
+                    listItem.textContent = 'No hay archivos guardados para este expediente.';
+                    filesList.appendChild(listItem);
+                }
+            }
+
+            // Función para limpiar los detalles del expediente en la página derecha
+            function clearExpedienteDetails() {
+                detailExpedienteNumber.textContent = '';
+                detailExpedienteDate.textContent = '';
+                filesList.innerHTML = '';
+                // Deseleccionar cualquier fila de la tabla
+                document.querySelectorAll('.selectable-row').forEach(row => {
+                    row.classList.remove('selected');
+                });
+            }
+
+            // --- Funciones para el Árbol de Consulta ---
+
+            // Función recursiva para renderizar el árbol
+            function renderTreeNodes(nodes, parentElement) {
+                const ul = document.createElement('ul');
+                ul.classList.add('tree-node-children');
+                parentElement.appendChild(ul);
+
+                nodes.forEach(node => {
+                    const li = document.createElement('li');
+                    const nodeDiv = document.createElement('div');
+                    nodeDiv.classList.add('tree-node');
+
+                    let icon = '';
+                    if (node.children && node.children.length > 0) {
+                        icon = '<span class="tree-node-icon">►</span>'; // Icono para expandir
+                        nodeDiv.classList.add('has-children');
+                    } else {
+                        icon = '<span class="tree-node-icon"></span>'; // Espacio para alinear hojas
+                        nodeDiv.classList.add('tree-item-leaf');
+                    }
+
+                    nodeDiv.innerHTML = `${icon}<span>${node.name}</span>`;
+                    li.appendChild(nodeDiv);
+
+                    if (node.children && node.children.length > 0) {
+                        const childrenUl = renderTreeNodes(node.children, li); // Renderizar hijos recursivamente
+                        childrenUl.classList.add('hidden'); // Ocultar hijos por defecto
+                        nodeDiv.addEventListener('click', (e) => {
+                            e.stopPropagation(); // Evitar que el clic se propague a los padres
+                            childrenUl.classList.toggle('hidden');
+                            const currentIcon = nodeDiv.querySelector('.tree-node-icon');
+                            if (currentIcon) {
+                                currentIcon.textContent = childrenUl.classList.contains('hidden') ? '►' : '▼';
+                            }
+                            // Si es un nodo categoría, limpiar detalles al expandir/contraer
+                            if (node.type === 'category') {
+                                clearConsultationDetails();
+                            }
+                        });
+                    } else {
+                        // Es un nodo hoja, mostrar detalles al hacer clic
+                        nodeDiv.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            displayConsultationDetails(node);
+                        });
+                    }
+                    ul.appendChild(li);
+                });
+                return ul;
+            }
+
+            // Función principal para renderizar el árbol en el contenedor
+            function renderConsultationTree(data, container) {
+                container.innerHTML = ''; // Limpiar el contenedor
+                data.forEach(rootNode => {
+                    renderTreeNodes([rootNode], container);
+                });
+            }
+
+            // Función para mostrar los detalles de un nodo del árbol
+            function displayConsultationDetails(node) {
+                consultationDetailTitle.textContent = node.name;
+                consultationDetailContent.innerHTML = ''; // Limpiar contenido anterior
+
+                if (node.details) {
+                    const detailsP = document.createElement('p');
+                    detailsP.classList.add('text-gray-700', 'mb-4');
+                    detailsP.textContent = node.details;
+                    consultationDetailContent.appendChild(detailsP);
+                }
+
+                if (node.agreements && node.agreements.length > 0) {
+                    const agreementsTitle = document.createElement('h4');
+                    agreementsTitle.classList.add('text-md', 'font-semibold', 'text-gray-800', 'mb-2');
+                    agreementsTitle.textContent = 'Acuerdos Generados:';
+                    consultationDetailContent.appendChild(agreementsTitle);
+
+                    const agreementsUl = document.createElement('ul');
+                    agreementsUl.classList.add('list-disc', 'list-inside', 'text-gray-700', 'space-y-1');
+                    node.agreements.forEach(agreement => {
+                        const li = document.createElement('li');
+                        li.textContent = agreement.name;
+                        li.classList.add('cursor-pointer', 'hover:text-blue-600');
+                        li.addEventListener('click', () => {
+                            // Aquí podrías abrir un modal o mostrar el contenido completo del acuerdo
+                            alert(`Contenido del Acuerdo "${agreement.name}":\n\n${agreement.content}`);
+                        });
+                        agreementsUl.appendChild(li);
+                    });
+                    consultationDetailContent.appendChild(agreementsUl);
+                } else if (!node.details) {
+                    // Si no tiene detalles ni acuerdos, mostrar mensaje predeterminado
+                    const defaultP = document.createElement('p');
+                    defaultP.classList.add('text-gray-600');
+                    defaultP.textContent = 'No hay detalles disponibles para este elemento.';
+                    consultationDetailContent.appendChild(defaultP);
+                }
+            }
+
+            // Función para limpiar los detalles de la consulta
+            function clearConsultationDetails() {
+                consultationDetailTitle.textContent = 'DETALLES DE LA CONSULTA';
+                consultationDetailContent.innerHTML = '<p class="text-gray-600" id="consultationDetailText">Seleccione un elemento del árbol para ver sus detalles.</p>';
+            }
+
+            // --- Lógica del Calendario de Alertas ---
+            calculateDeadlineBtn.addEventListener('click', function() {
+                const receptionDate = receptionDateInput.value;
+                const receptionTime = receptionTimeInput.value;
+                const alertType = alertTypeSelect.value;
+
+                if (!receptionDate || !receptionTime) {
+                    deadlineResultSpan.textContent = 'Error: Ingrese fecha y hora de recepción.';
+                    alertStatusSpan.textContent = '';
+                    alertStatusSpan.classList.remove('text-black', 'text-red-500');
+                    return;
+                }
+
+                const receptionDateTime = new Date(`${receptionDate}T${receptionTime}:00`);
+                const deadlineHours = deadlineRules[alertType];
+
+                if (isNaN(receptionDateTime.getTime())) {
+                    deadlineResultSpan.textContent = 'Error: Formato de fecha/hora inválido.';
+                    alertStatusSpan.textContent = '';
+                    alertStatusSpan.classList.remove('text-black', 'text-red-500');
+                    return;
+                }
+
+                const deadlineDateTime = new Date(receptionDateTime.getTime() + deadlineHours * 60 * 60 * 1000);
+                const now = new Date();
+
+                deadlineResultSpan.textContent = formatDateTime(deadlineDateTime);
+
+                alertStatusSpan.classList.remove('text-black', 'text-red-500'); // Limpiar clases anteriores
+                if (now <= deadlineDateTime) {
+                    alertStatusSpan.textContent = 'En tiempo';
+                    alertStatusSpan.classList.add('text-black');
+                } else {
+                    alertStatusSpan.textContent = 'Fuera de tiempo';
+                    alertStatusSpan.classList.add('text-red-500');
+                }
+            });
+
+            // --- Lógica del Mini Calendario ---
+            const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+            function renderMiniCalendar(year, month) {
+                miniCalendarBody.innerHTML = ''; // Limpiar el contenido anterior
+
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const numDays = lastDay.getDate();
+                const startDayOfWeek = firstDay.getDay(); // 0 for Sunday, 1 for Monday, etc.
+
+                currentMonthYearSpan.textContent = `${monthNames[month]} ${year}`;
+
+                // Ajustar para que la semana empiece en Lunes (0=Domingo, 1=Lunes)
+                let firstDayIndex = (startDayOfWeek === 0) ? 6 : startDayOfWeek - 1; // 0=Lunes, ..., 6=Domingo
+
+                // Días del mes anterior para rellenar el inicio
+                const prevMonthLastDay = new Date(year, month, 0).getDate();
+                for (let i = 0; i < firstDayIndex; i++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.classList.add('calendar-day', 'other-month');
+                    dayCell.textContent = prevMonthLastDay - (firstDayIndex - 1) + i;
+                    miniCalendarBody.appendChild(dayCell);
+                }
+
+                // Días del mes actual
+                const today = new Date();
+                alertEvents.forEach(event => {
+                    event.parsedDate = new Date(event.date + 'T00:00:00'); // Parsear fecha una sola vez
+                });
+
+                for (let day = 1; day <= numDays; day++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.classList.add('calendar-day', 'current-month');
+                    dayCell.textContent = day;
+
+                    const currentDayDate = new Date(year, month, day);
+
+                    // Marcar el día actual
+                    if (currentDayDate.toDateString() === today.toDateString()) {
+                        dayCell.classList.add('today');
+                    }
+
+                    // Marcar días con alertas
+                    const dayString = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                    const alertsForDay = alertEvents.filter(event => {
+                        const eventDateString = event.parsedDate.toISOString().split('T')[0];
+                        return eventDateString === dayString;
+                    });
+
+                    if (alertsForDay.length > 0) {
+                        // Para simplificar, si hay alguna alerta "late", se marca en rojo. De lo contrario, en negro.
+                        const hasLateAlert = alertsForDay.some(alert => alert.status === 'late');
+                        if (hasLateAlert) {
+                            dayCell.classList.add('has-alert-late');
+                        } else {
+                            dayCell.classList.add('has-alert-in-time');
+                        }
+                        dayCell.title = alertsForDay.map(a => a.description).join('\n'); // Mostrar descripciones al pasar el ratón
+                    }
+
+                    miniCalendarBody.appendChild(dayCell);
+                }
+
+                // Días del mes siguiente para rellenar el final
+                const totalCells = firstDayIndex + numDays;
+                const remainingCells = 42 - totalCells; // 6 semanas * 7 días = 42 celdas
+                for (let i = 1; i <= remainingCells; i++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.classList.add('calendar-day', 'other-month');
+                    dayCell.textContent = i;
+                    miniCalendarBody.appendChild(dayCell);
+                }
+            }
+
+            prevMonthBtn.addEventListener('click', () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                renderMiniCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                renderMiniCalendar(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth());
+            });
+
+
+            // --- Event Listeners para las pestañas ---
+
+            // Event listener para la pestaña naranja (cambiar a lista de expedientes)
+            orangeTab.addEventListener('click', function() {
+                currentPageIndex = 1; // Ir a la página de lista/detalles
+                updateMainContent();
+            });
+
+            // Event listener para la pestaña roja (regresar a formulario de expediente)
+            redTab.addEventListener('click', function() {
+                currentPageIndex = 0; // Ir a la página del formulario de expediente
+                updateMainContent();
+            });
+
+            // Event listener para la pestaña amarilla (Árbol de Consulta)
+            yellowTab.addEventListener('click', function() {
+                currentPageIndex = 2; // Ir a la página del árbol de consulta
+                updateMainContent();
+            });
+
+            // Event listener para la pestaña verde (Calendario de Alertas y Proceso de Revisión)
+            greenTab.addEventListener('click', function() {
+                currentPageIndex = 3; // Ir a la página del calendario de alertas
+                updateMainContent();
+            });
+
+            // Lógica existente para la carga de PDF
+            pdfUploadInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+
+                if (file) {
+                    if (file.type === 'application/pdf') {
+                        const reader = new FileReader();
+
+                        reader.onload = function(e) {
+                            pdfPreviewIframe.src = e.target.result;
+                            pdfPreviewIframe.classList.remove('hidden');
+                            pdfMessage.textContent = 'PDF cargado correctamente.';
+                            pdfMessage.classList.remove('text-red-500');
+                            pdfMessage.classList.add('text-green-600');
+                        };
+
+                        reader.onerror = function() {
+                            pdfMessage.textContent = 'Error al leer el archivo.';
+                            pdfMessage.classList.add('text-red-500');
+                            pdfPreviewIframe.classList.add('hidden');
+                            pdfPreviewIframe.src = '';
+                        };
+
+                        reader.readAsDataURL(file);
+                    } else {
+                        pdfMessage.textContent = 'Tipo de archivo no permitido. Por favor, suba un archivo PDF.';
+                        pdfMessage.classList.add('text-red-500');
+                        pdfMessage.classList.remove('text-green-600');
+                        pdfPreviewIframe.classList.add('hidden');
+                        pdfPreviewIframe.src = '';
+                        pdfUploadInput.value = '';
+                    }
+                } else {
+                    pdfMessage.textContent = 'Solo archivos .pdf son permitidos.';
+                    pdfMessage.classList.remove('text-red-500', 'text-green-600');
+                    pdfPreviewIframe.classList.add('hidden');
+                    pdfPreviewIframe.src = '';
+                }
+            });
+
+            // Inicializar el contenido de la página al cargar
+            updateMainContent();
+        });
+    </script>
+</body>
+</html>

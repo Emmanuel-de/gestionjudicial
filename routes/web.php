@@ -45,4 +45,5 @@ Route::get('/api/expedientes/{expediente}/detalles', [ExpedienteController::clas
 Route::get('/expedientes/{expediente}/descargar-pdf', [ExpedienteController::class, 'descargarPdf'])->name('expedientes.descargar-pdf');
 Route::put('/documents/{document}/description', [DocumentController::class, 'updateDescription']);
 Route::get('/expediente/archivo/{id}', [ExpedienteController::class, 'obtenerArchivo']);
+Route::get('/expedientes/{expediente}/pdf', [ExpedienteController::class, 'mostrarPdf'])->name('expedientes.pdf');
 

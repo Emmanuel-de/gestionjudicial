@@ -48,10 +48,4 @@ class Expediente extends Model
     protected $attributes = [
         'estado' => 'activo',
     ];
-
-    public function archivos()
-{
-    return $this->hasMany(ArchivoExpediente::class);
-}
-
 }
