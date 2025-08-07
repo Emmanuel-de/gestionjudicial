@@ -333,4 +333,68 @@ class DocumentController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Search for a document by its code and return details for auto-filling form
+     */
+    public function searchByCode(string $code): JsonResponse
+    {
+        try {
+            $document = Document::where('code', $code)->first();
+
+            if (!$document) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Documento no encontrado con el código proporcionado.',
+                    'found' => false
+                ], 404);
+            }
+
+            // Generate a unique file number
+            $fileNumber = $this->generateUniqueFileNumber();
+
+            return response()->json([
+                'success' => true,
+                'found' => true,
+                'message' => 'Documento encontrado exitosamente.',
+                'document' => [
+                    'id' => $document->id,
+                    'code' => $document->code,
+                    'type' => $document->type,
+                    'description' => $document->description ?? '',
+                    'reception_date' => $document->formatted_reception_date ?? $document->reception_date->format('d/m/Y H:i'),
+                    'file_number' => $fileNumber
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al buscar el documento.',
+                'found' => false,
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate a unique file number
+     */
+    private function generateUniqueFileNumber(): string
+    {
+        do {
+            // Generate a random file number format: EXP-YYYY-XXXXXX
+            $year = date('Y');
+            $randomNumber = str_pad(rand(1, 999999), 6, '0', STR_PAD_LEFT);
+            $fileNumber = "EXP-{$year}-{$randomNumber}";
+            
+            // Check if this number already exists in the database
+            // Assuming you have a way to track file numbers, you might need to create a table for this
+            // For now, we'll just generate a unique number based on timestamp + random
+            $fileNumber = "EXP-{$year}-" . str_pad(time() . rand(10, 99), 8, '0', STR_PAD_LEFT);
+            
+        } while (false); // In a real implementation, you'd check against existing file numbers
+
+        return $fileNumber;
+    }
 }

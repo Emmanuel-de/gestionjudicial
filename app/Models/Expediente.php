@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Expediente extends Model
 {
@@ -19,30 +20,38 @@ class Expediente extends Model
     ];
 
     protected $casts = [
-        'fecha_creacion' => 'date'
+        'fecha_creacion' => 'date',
     ];
 
-    // Relación con archivos adjuntos (si en el futuro quieres expandir)
-    public function archivos()
-    {
-        return $this->hasMany(ArchivoExpediente::class);
-    }
-
-    // Accessor para formatear la fecha
-    public function getFechaCreacionFormattedAttribute()
-    {
-        return $this->fecha_creacion->format('d/m/Y');
-    }
-
-    // Scope para expedientes activos
+    // Scope for active expedientes
     public function scopeActivos($query)
     {
         return $query->where('estado', 'activo');
     }
 
-    // Scope para buscar por número de expediente
+    // Scope for searching by number
     public function scopeBuscarPorNumero($query, $numero)
     {
-        return $query->where('numero_expediente', 'like', '%' . $numero . '%');
+        if ($numero) {
+            return $query->where('numero_expediente', 'like', '%' . $numero . '%');
+        }
+        return $query;
     }
+
+    // Accessor for formatted creation date
+    public function getFechaCreacionFormattedAttribute()
+    {
+        return $this->fecha_creacion ? $this->fecha_creacion->format('d/m/Y') : null;
+    }
+
+    // Default estado to 'activo'
+    protected $attributes = [
+        'estado' => 'activo',
+    ];
+
+    public function archivos()
+{
+    return $this->hasMany(ArchivoExpediente::class);
+}
+
 }

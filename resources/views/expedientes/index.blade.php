@@ -109,8 +109,9 @@
                 <div id="pageContentExpediente" class="w-full flex flex-col items-center">
                     <!-- Campo de entrada para búsqueda de documentos o número de documento -->
                     <input type="text" id="searchInputExpediente" class="w-2/3 md:w-1/2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6 md:mb-8" placeholder="Buscar documento...">
+                    <div id="search-message" class="mb-4 text-sm hidden"></div>
                     <!-- Área de texto grande para descripción o vista previa del documento -->
-                    <textarea id="textareaExpediente" class="w-full h-48 md:h-64 p-3 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6" placeholder="Descripción detallada del documento..."></textarea>
+                    <textarea id="textareaExpediente" class="w-full h-48 md:h-64 p-3 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6" placeholder="Descripción detallada del documento..." readonly></textarea>
 
                     <!-- Sección para Cargar PDF y Vista Previa -->
                     <div id="pdfUploadSection" class="w-full flex flex-col items-center mt-4 p-4 border border-dashed border-gray-400 rounded-md bg-gray-50">
@@ -215,16 +216,16 @@
                     <!-- Formulario para crear expediente -->
                     <form id="expedienteForm" method="POST" action="{{ route('expedientes.store') }}" enctype="multipart/form-data" class="w-full">
                         @csrf
-                        <input type="text" name="numero_expediente" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Número de Expediente" required>
-                        <input type="text" name="tipo_documento" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Tipo de Documento" required>
-                        <input type="date" name="fecha_creacion" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6 md:mb-8" required>
+                        <input type="text" id="numero_expediente" name="numero_expediente" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Número de Expediente" readonly>
+                        <input type="text" id="tipo_documento" name="tipo_documento" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Tipo de Documento" readonly>
+                        <input type="text" id="fecha_creacion" name="fecha_creacion" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6 md:mb-8" placeholder="dd/mm/aaaa" readonly>
 
                         <!-- Contenedor para los botones -->
                         <div class="flex space-x-4">
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition duration-300 ease-in-out">
+                            <button type="submit" id="register-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition duration-300 ease-in-out" disabled>
                                 REGISTRAR
                             </button>
-                            <button type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition duration-300 ease-in-out">
+                            <button type="button" id="close-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md shadow-md transition duration-300 ease-in-out">
                                 CERRAR
                             </button>
                         </div>
@@ -287,20 +288,11 @@
 @php
     $expedientesData = $expedientes->map(function($expediente) {
         return [
-            'id' => $expediente->numero_expediente,
+            'id' => $expediente->numero_expediente, // Changed from $expediente->id to $expediente->numero_expediente
             'date' => $expediente->fecha_creacion,
             'type' => $expediente->tipo_documento,
             'description' => $expediente->descripcion ?? '',
-            'files' => [
-                [
-                    'name' => 'Documento 1',
-                    'url' => asset('ruta/a/documento1.pdf'), // Ajusta esta ruta a tu lógica real
-                ],
-                [
-                    'name' => 'Documento 2',
-                    'url' => asset('ruta/a/documento2.pdf'),
-                ]
-            ],
+            'files' => $expediente->archivos ? json_decode($expediente->archivos, true) : [], // Assuming 'archivos' is a JSON string
         ];
     });
 @endphp
@@ -363,7 +355,226 @@
         // Muestra el contenido de la pestaña roja por defecto al cargar la página
         showContent('red');
 
-        // Código existente para el árbol de consulta (lo dejé para referencia)
+        // Document search functionality
+        const documentSearchInput = document.getElementById('searchInputExpediente');
+        const documentDescription = document.getElementById('textareaExpediente');
+        const fileNumberInput = document.getElementById('numero_expediente');
+        const documentTypeInput = document.getElementById('tipo_documento');
+        const documentDateInput = document.getElementById('fecha_creacion');
+        const searchMessage = document.getElementById('search-message');
+        const registerBtn = document.getElementById('register-btn');
+        const pdfUpload = document.getElementById('pdfUpload');
+
+        let searchTimeout = null;
+        let foundDocument = null;
+
+        // Function to show messages
+        function showMessage(text, type = 'success') {
+            searchMessage.textContent = text;
+            searchMessage.className = `mb-4 text-sm ${type === 'success' ? 'text-green-600' : 'text-red-600'}`;
+            searchMessage.classList.remove('hidden');
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    searchMessage.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // Function to clear form fields
+        function clearForm() {
+            documentDescription.value = '';
+            fileNumberInput.value = '';
+            documentTypeInput.value = '';
+            documentDateInput.value = '';
+            registerBtn.disabled = true;
+            foundDocument = null;
+        }
+
+        // Function to fill form with document data
+        function fillForm(document) {
+            documentDescription.value = document.description || '';
+            fileNumberInput.value = document.file_number || '';
+            documentTypeInput.value = document.type || '';
+            documentDateInput.value = document.reception_date || '';
+            registerBtn.disabled = false;
+            foundDocument = document;
+        }
+
+        // Search for document by code
+        function searchDocumentByCode(code) {
+            if (!code.trim()) {
+                clearForm();
+                searchMessage.classList.add('hidden');
+                return;
+            }
+
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+
+            searchTimeout = setTimeout(() => {
+                fetch(`{{ url('/documents/search-by-code') }}/${encodeURIComponent(code)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.found) {
+                        fillForm(data.document);
+                        showMessage(`Documento encontrado: ${data.document.code}`, 'success');
+                    } else {
+                        clearForm();
+                        showMessage(data.message || 'Documento no encontrado', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    clearForm();
+                    showMessage('Error al buscar el documento', 'error');
+                });
+            }, 500);
+        }
+
+        // Event listeners
+        documentSearchInput.addEventListener('input', function(e) {
+            const code = e.target.value.trim();
+            searchDocumentByCode(code);
+        });
+
+        // Form submission
+        document.getElementById('expedienteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!foundDocument) {
+                showMessage('Debe buscar y seleccionar un documento primero', 'error');
+                return;
+            }
+
+            if (!pdfUpload.files[0]) {
+                showMessage('Debe adjuntar un archivo PDF', 'error');
+                return;
+            }
+
+            // Create FormData object to handle file upload
+            const formData = new FormData();
+            formData.append('_token', document.querySelector('input[name="_token"]').value);
+            formData.append('numero_expediente', fileNumberInput.value);
+            formData.append('tipo_documento', documentTypeInput.value);
+            formData.append('fecha_creacion', documentDateInput.value);
+            formData.append('descripcion', documentDescription.value);
+            formData.append('archivo_pdf', pdfUpload.files[0]);
+
+            // Submit form via AJAX
+            fetch('{{ route("expedientes.store") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Expediente registrado exitosamente', 'success');
+                    setTimeout(() => {
+                        documentSearchInput.value = '';
+                        clearForm();
+                        pdfUpload.value = '';
+                        document.getElementById('pdfPreview').classList.add('hidden');
+                    }, 2000);
+                } else {
+                    showMessage(data.message || 'Error al registrar el expediente', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Error al registrar el expediente', 'error');
+            });
+        });
+
+        // PDF preview functionality
+        pdfUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const pdfMessage = document.getElementById('pdfMessage');
+            const pdfPreview = document.getElementById('pdfPreview');
+
+            if (file) {
+                if (file.type === 'application/pdf') {
+                    const fileURL = URL.createObjectURL(file);
+                    pdfPreview.src = fileURL;
+                    pdfPreview.classList.remove('hidden');
+                    pdfMessage.textContent = `Archivo seleccionado: ${file.name}`;
+                    pdfMessage.className = 'mt-2 text-xs text-green-600';
+                } else {
+                    pdfPreview.classList.add('hidden');
+                    pdfMessage.textContent = 'Solo archivos .pdf son permitidos.';
+                    pdfMessage.className = 'mt-2 text-xs text-red-500';
+                    pdfUpload.value = '';
+                }
+            }
+        });
+
+        // Close button
+        document.getElementById('close-btn').addEventListener('click', function() {
+            if (confirm('¿Está seguro de que desea cerrar? Se perderán todos los datos no guardados.')) {
+                documentSearchInput.value = '';
+                clearForm();
+                pdfUpload.value = '';
+                document.getElementById('pdfPreview').classList.add('hidden');
+                searchMessage.classList.add('hidden');
+            }
+        });
+
+        // Function to handle selecting an expediente and displaying its files
+        function selectExpedienteWithDetails(expediente, row) {
+            // Remove any previously selected row class
+            document.querySelectorAll('.selectable-row').forEach(r => r.classList.remove('selected'));
+            // Add selected class to the current row
+            row.classList.add('selected');
+
+            // Update the expediente details view
+            document.getElementById('detailExpedienteNumber').textContent = expediente.numero_expediente;
+            document.getElementById('detailExpedienteDate').textContent = expediente.fecha_creacion;
+
+            const filesListElement = document.getElementById('filesList');
+            filesListElement.innerHTML = ''; // Clear previous list
+
+            if (expediente.archivos && expediente.archivos.length > 0) {
+                expediente.archivos.forEach(file => {
+                    const listItem = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = `/storage/${file.ruta_archivo}`; // Assuming ruta_archivo stores the path relative to storage
+                    link.textContent = file.nombre_archivo;
+                    link.className = 'text-blue-600 hover:underline';
+                    link.target = '_blank'; // Open in new tab
+
+                    // Add click listener to preview PDF in iframe
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const iframe = document.getElementById('pdfPreview');
+                        iframe.src = link.href;
+                        iframe.classList.remove('hidden');
+                        // Optionally, switch to the 'red' tab to show the preview
+                        showContent('red');
+                        document.getElementById('searchInputExpediente').value = expediente.numero_expediente; // Set search input to the expediente number
+                    });
+
+                    listItem.appendChild(link);
+                    filesListElement.appendChild(listItem);
+                });
+            } else {
+                filesListElement.innerHTML = '<li class="text-gray-500">No hay archivos adjuntos para este expediente.</li>';
+            }
+
+            // Switch to the expediente files view
+            showContent('orange');
+        }
+
+        // Code for the consultation tree
         const expedientesData = @json($expedientesData);
         const treeContainer = document.getElementById("treeContainer");
         const previewIframe = document.getElementById("pdfPreview");
@@ -373,7 +584,7 @@
         function createTree(data) {
             if (!treeContainer) return;
 
-            treeContainer.innerHTML = ""; // Limpiar árbol existente
+            treeContainer.innerHTML = "";
 
             data.forEach((expediente) => {
                 const expedienteNode = document.createElement("div");
@@ -415,11 +626,9 @@
             }
         }
 
-        // Llamada a la función para crear el árbol cuando se carga la página
         createTree(expedientesData);
 
-
-        // Código para el calendario (lo dejé para referencia)
+        // Code for the calendar
         const miniCalendarBody = document.getElementById('miniCalendarBody');
         const currentMonthYear = document.getElementById('currentMonthYear');
         const prevMonthBtn = document.getElementById('prevMonthBtn');
@@ -451,22 +660,51 @@
                 if (year === new Date().getFullYear() && month === new Date().getMonth() && i === new Date().getDate()) {
                     dayDiv.classList.add('today');
                 }
-                // Aquí podrías agregar lógica para las alertas si tuvieras los datos
                 miniCalendarBody.appendChild(dayDiv);
             }
         }
 
-        prevMonthBtn.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            renderCalendar();
-        });
+        if (prevMonthBtn && nextMonthBtn) {
+            prevMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
 
-        nextMonthBtn.addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            renderCalendar();
-        });
+            nextMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+        }
 
         renderCalendar();
+
+        // Event listeners para filas de expedientes
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.selectable-row')) {
+                const row = e.target.closest('.selectable-row');
+                const expedienteId = row.dataset.expedienteId;
+
+                // Fetch expediente details via AJAX
+                fetch(`{{ url('/api/expedientes') }}/${expedienteId}/detalles`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        selectExpedienteWithDetails(data.expediente, row);
+                    } else {
+                        console.error('Error loading expediente details:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        });
     });
 </script>
 @endsection

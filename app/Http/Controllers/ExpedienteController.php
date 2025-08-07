@@ -49,6 +49,13 @@ class ExpedienteController extends Controller
         ]);
 
         if ($validator->fails()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Errores de validación: ' . $validator->errors()->first()
+                ], 422);
+            }
+            
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput()
@@ -65,18 +72,46 @@ class ExpedienteController extends Controller
             // Manejar la carga del archivo PDF
             if ($request->hasFile('archivo_pdf')) {
                 $archivo = $request->file('archivo_pdf');
-                $nombreArchivo = time() . '_' . $request->numero_expediente . '.' . $archivo->getClientOriginalExtension();
+                $nombreArchivo = time() . '_' . $archivo->getClientOriginalName();
                 $rutaArchivo = $archivo->storeAs('expedientes', $nombreArchivo, 'public');
-                $expediente->archivo_pdf = $rutaArchivo;
+                
+                $expediente->archivo_pdf = null;
+                $expediente->save();
+
+                $expediente->archivos()->create([
+                    'nombre_original' => $archivo->getClientOriginalName(),
+                    'ruta' => $rutaArchivo,
+                ]);
+            }else{
+               $expediente->save();
             }
 
-            $expediente->save();
+            
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Expediente creado exitosamente.',
+                    'expediente' => [
+                        'id' => $expediente->id,
+                        'numero_expediente' => $expediente->numero_expediente,
+                        'fecha_creacion' => $expediente->fecha_creacion_formatted
+                    ]
+                ]);
+            }
 
             return redirect()->route('expedientes.create')
                 ->with('success', 'Expediente creado exitosamente.')
                 ->with('expediente_creado', $expediente->numero_expediente);
 
         } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ocurrió un error al crear el expediente. Por favor intenta de nuevo.'
+                ], 500);
+            }
+
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Ocurrió un error al crear el expediente. Por favor intenta de nuevo.');
@@ -194,30 +229,31 @@ class ExpedienteController extends Controller
     /**
      * Obtener detalles de un expediente específico (AJAX)
      */
-    public function obtenerDetalles($id)
-    {
-        try {
-            $expediente = Expediente::findOrFail($id);
-            
-            return response()->json([
-                'success' => true,
-                'expediente' => [
-                    'id' => $expediente->id,
-                    'numero_expediente' => $expediente->numero_expediente,
-                    'tipo_documento' => $expediente->tipo_documento,
-                    'fecha_creacion' => $expediente->fecha_creacion_formatted,
-                    'descripcion' => $expediente->descripcion,
-                    'archivo_pdf' => $expediente->archivo_pdf ? Storage::url($expediente->archivo_pdf) : null,
-                    'estado' => $expediente->estado
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Expediente no encontrado.'
-            ], 404);
-        }
+   public function obtenerDetalles($id)
+{
+    try {
+        $expediente = Expediente::findOrFail($id);
+        
+        return response()->json([
+            'success' => true,
+            'expediente' => [
+                'id' => $expediente->id,
+                'numero_expediente' => $expediente->numero_expediente,
+                'tipo_documento' => $expediente->tipo_documento,
+                'fecha_creacion' => $expediente->fecha_creacion_formatted,
+                'descripcion' => $expediente->descripcion,
+                'archivo_pdf' => $expediente->archivo_pdf ? Storage::url($expediente->archivo_pdf) : null,
+                'estado' => $expediente->estado
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Expediente no encontrado.'
+        ], 404);
     }
+}
+
 
     /**
      * Descargar archivo PDF del expediente

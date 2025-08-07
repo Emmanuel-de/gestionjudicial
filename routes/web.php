@@ -26,7 +26,8 @@ Route::prefix('documents')->name('documents.')->group(function () {
     Route::put('/{document}', [DocumentController::class, 'update'])->name('update');
     Route::delete('/{document}', [DocumentController::class, 'destroy'])->name('destroy');
     Route::get('/search/ajax', [DocumentController::class, 'search'])->name('search');
-    
+    Route::get('/search-by-code/{code}', [DocumentController::class, 'searchByCode'])->name('documents.searchByCode');
+
 });
 
 // Ruta alternativa si prefieres que sea la ruta principal
@@ -43,3 +44,5 @@ Route::get('/api/expedientes/buscar', [ExpedienteController::class, 'buscar'])->
 Route::get('/api/expedientes/{expediente}/detalles', [ExpedienteController::class, 'obtenerDetalles'])->name('expedientes.detalles');
 Route::get('/expedientes/{expediente}/descargar-pdf', [ExpedienteController::class, 'descargarPdf'])->name('expedientes.descargar-pdf');
 Route::put('/documents/{document}/description', [DocumentController::class, 'updateDescription']);
+Route::get('/expediente/archivo/{id}', [ExpedienteController::class, 'obtenerArchivo']);
+
