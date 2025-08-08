@@ -16,12 +16,16 @@ class Expediente extends Model
         'fecha_creacion',
         'descripcion',
         'archivo_pdf',
+        'tree_data',
         'estado'
     ];
 
     protected $casts = [
         'fecha_creacion' => 'date',
+        
     ];
+
+    
 
     // Scope for active expedientes
     public function scopeActivos($query)

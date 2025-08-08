@@ -256,4 +256,69 @@ class ExpedienteController extends Controller
 
         return Storage::disk('public')->download($expediente->archivo_pdf, $expediente->numero_expediente . '.pdf');
     }
+
+    public function storeTree(Request $request)
+    {
+        try {
+            $request->validate([
+                'expediente_id' => 'required',
+                'tree_data' => 'required|array'
+            ]);
+
+            $expediente = Expediente::find($request->expediente_id);
+            if (!$expediente) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Expediente no encontrado'
+                ], 404);
+            }
+
+            // Guardar los datos del árbol como JSON en la base de datos
+            $expediente->tree_data = json_encode($request->tree_data);
+            $expediente->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Árbol guardado exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar el árbol: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Nuevo método para obtener el árbol del expediente
+    public function getTree($id)
+    {
+        try {
+            $expediente = Expediente::find($id);
+            if (!$expediente) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Expediente no encontrado'
+                ], 404);
+            }
+
+            $treeData = null;
+            if ($expediente->tree_data) {
+                $treeData = json_decode($expediente->tree_data, true);
+            }
+
+            return response()->json([
+                'success' => true,
+                'tree_data' => $treeData,
+                'expediente' => $expediente
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cargar el árbol: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

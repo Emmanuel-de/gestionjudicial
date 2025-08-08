@@ -46,4 +46,7 @@ Route::get('/expedientes/{expediente}/descargar-pdf', [ExpedienteController::cla
 Route::put('/documents/{document}/description', [DocumentController::class, 'updateDescription']);
 Route::get('/expediente/archivo/{id}', [ExpedienteController::class, 'obtenerArchivo']);
 Route::get('/expedientes/{expediente}/pdf', [ExpedienteController::class, 'mostrarPdf'])->name('expedientes.pdf');
+Route::post('/expedientes/tree/store', [ExpedienteController::class, 'storeTree'])->name('expedientes.tree.store');
+Route::get('/api/expedientes/{id}/tree', [ExpedienteController::class, 'getTree']);
+
 

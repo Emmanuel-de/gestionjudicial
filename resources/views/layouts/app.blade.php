@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Poder Judicial - Tamaulipas</title>
     <!-- CSRF Token (¡IMPORTANTE para Laravel y peticiones AJAX!) -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -57,10 +58,10 @@
 </div>
             <!-- Botones de redes sociales -->
             <div class="flex space-x-2 mt-4 md:mt-0">
-                <a href="#" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="w-10 h-10 bg-blue-400 text-white rounded-full flex items-center justify-center hover:bg-blue-500"><i class="fab fa-twitter"></i></a>
-                <a href="#" class="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700"><i class="fab fa-youtube"></i></a>
-                <a href="#" class="w-10 h-10 bg-pink-600 text-white rounded-full flex items-center justify-center hover:bg-pink-700"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.facebook.com/PJTamaulipasMx/" target="_blank" class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://x.com/PJTamaulipasMx" target="_blank" class="w-10 h-10 bg-blue-400 text-white rounded-full flex items-center justify-center hover:bg-blue-500"><i class="fab fa-twitter"></i></a>
+                <a href="https://www.youtube.com/@pjtamaulipasmx" target="_blank" class="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700"><i class="fab fa-youtube"></i></a>
+                <a href="https://www.instagram.com/pjtamaulipasmx/" target="_blank" class="w-10 h-10 bg-pink-600 text-white rounded-full flex items-center justify-center hover:bg-pink-700"><i class="fab fa-instagram"></i></a>
             </div>
         </div>
     </header>
