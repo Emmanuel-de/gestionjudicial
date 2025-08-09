@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('content')
@@ -6,7 +7,7 @@
         font-family: 'Inter', sans-serif;
         background-color: #f0f0f0;
     }
-    
+
     /* Modal styles */
     .modal {
         display: none;
@@ -18,13 +19,13 @@
         height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
     }
-    
+
     .modal.show {
         display: flex;
         align-items: center;
         justify-content: center;
     }
-    
+
     .modal-content {
         background-color: white;
         padding: 20px;
@@ -33,7 +34,7 @@
         max-width: 500px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-    
+
     /* Estilos para el iframe de vista previa */
     .pdf-preview-iframe {
         width: 100%;
@@ -42,7 +43,7 @@
         border-radius: 0.375rem;
         background-color: #f8fafc;
     }
-    
+
     /* Estilo para filas de tabla seleccionables */
     .selectable-row {
         cursor: pointer;
@@ -54,7 +55,7 @@
     .selectable-row.selected {
         background-color: #bfdbfe;
     }
-    
+
     /* Estilos mejorados para el árbol de consulta */
     .tree-node {
         cursor: pointer;
@@ -68,16 +69,16 @@
         position: relative;
         transition: background-color 0.2s ease-in-out;
     }
-    
+
     .tree-node:hover {
         background-color: #edf2f7;
     }
-    
+
     .tree-node.selected {
         background-color: #bfdbfe;
         color: #1e40af;
     }
-    
+
     .tree-node-icon {
         margin-right: 8px;
         width: 16px;
@@ -88,27 +89,27 @@
         font-weight: bold;
         color: #2b6cb0;
     }
-    
+
     .tree-node-children {
         margin-left: 20px;
         list-style: none;
         padding: 0;
     }
-    
+
     .tree-node-children.hidden {
         display: none;
     }
-    
+
     .tree-actions {
         margin-left: auto;
         display: none;
         gap: 4px;
     }
-    
+
     .tree-node:hover .tree-actions {
         display: flex;
     }
-    
+
     .action-btn {
         width: 24px;
         height: 24px;
@@ -121,29 +122,29 @@
         align-items: center;
         justify-content: center;
     }
-    
+
     .add-btn {
         background-color: #10b981;
         color: white;
     }
-    
+
     .add-btn:hover {
         background-color: #059669;
     }
-    
+
     .delete-btn {
         background-color: #ef4444;
         color: white;
     }
-    
+
     .delete-btn:hover {
         background-color: #dc2626;
     }
-    
+
     .tree-item-leaf {
         padding-left: 24px;
     }
-    
+
     /* Estilos para el mini-calendario */
     .calendar-grid {
         display: grid;
@@ -155,6 +156,11 @@
         padding: 4px;
         font-size: 0.8rem;
         border-radius: 0.25rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    .calendar-day:hover {
+        background-color: #e2e8f0;
     }
     .calendar-day.current-month {
         background-color: #f0f4f8;
@@ -175,6 +181,17 @@
     .calendar-day.today {
         border: 1px solid #2563eb;
         background-color: #bfdbfe;
+    }
+    .calendar-day.has-event {
+        position: relative;
+    }
+    .calendar-day.has-event::after {
+        content: '●';
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        font-size: 8px;
+        color: #3b82f6;
     }
 </style>
 
@@ -284,7 +301,7 @@
             <div class="flex-1 p-6 md:p-8 bg-white relative flex flex-col items-center">
                 <!-- Pestañas de colores -->
                 <div class="absolute top-0 right-0 h-full flex flex-col justify-evenly">
-                    
+
                     <div class="w-4 h-1/4 bg-red-500 rounded-l-md cursor-pointer flex items-center justify-center text-white font-bold"
                      id="redTab"
                      style="writing-mode: vertical-rl; text-orientation: upright; font-size: 10px;">
@@ -393,7 +410,7 @@
             <h3 class="text-lg font-semibold text-gray-800">Agregar Nuevo Elemento</h3>
             <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
         </div>
-        
+
         <form id="addElementForm">
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Elemento:</label>
@@ -408,27 +425,27 @@
                     </label>
                 </div>
             </div>
-            
+
             <div class="mb-4">
                 <label for="elementName" class="block text-sm font-medium text-gray-700 mb-2">Nombre:</label>
                 <input type="text" id="elementName" name="elementName" 
                        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                        placeholder="Ingrese el nombre del elemento" required>
             </div>
-            
+
             <div id="hechoDetails" class="mb-4 hidden">
                 <label for="elementDescription" class="block text-sm font-medium text-gray-700 mb-2">Descripción del Hecho:</label>
                 <textarea id="elementDescription" name="elementDescription" rows="3"
                           class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Describa los detalles del hecho..."></textarea>
-                
+
                 <div class="mt-2">
                     <label for="elementDate" class="block text-sm font-medium text-gray-700 mb-2">Fecha del Hecho:</label>
                     <input type="date" id="elementDate" name="elementDate"
                            class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
-            
+
             <div class="flex justify-end gap-2">
                 <button type="button" id="cancelModal" 
                         class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
@@ -450,13 +467,13 @@
             <h3 class="text-lg font-semibold text-gray-800">Confirmar Eliminación</h3>
             <button id="closeDeleteModal" class="text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
         </div>
-        
+
         <div class="mb-6">
             <p class="text-gray-600">¿Está seguro de que desea eliminar este elemento?</p>
             <p id="deleteElementName" class="font-semibold text-gray-800 mt-2"></p>
             <p class="text-red-600 text-sm mt-2">Esta acción no se puede deshacer.</p>
         </div>
-        
+
         <div class="flex justify-end gap-2">
             <button type="button" id="cancelDelete" 
                     class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
@@ -466,6 +483,62 @@
                     class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
                 Eliminar
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ver/editar eventos del calendario -->
+<div id="dayDetailModal" class="modal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="dayDetailModalTitle" class="text-lg font-semibold text-gray-800">Eventos del Día</h3>
+            <button id="closeDayDetailModal" class="text-gray-500 hover:text-gray-700 text-xl font-bold">&times;</button>
+        </div>
+
+        <!-- Lista de eventos existentes -->
+        <div id="existingEventsContainer" class="mb-4 hidden">
+            <h4 class="text-md font-medium text-gray-700 mb-2">Eventos registrados:</h4>
+            <div id="eventsList" class="space-y-2 mb-4 max-h-60 overflow-y-auto">
+                <!-- Los eventos se cargarán aquí -->
+            </div>
+            <button type="button" id="addAnotherEventBtn" 
+                    class="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 mb-4">
+                + Agregar otro evento
+            </button>
+        </div>
+
+        <!-- Formulario para nuevo evento -->
+        <div id="eventForm" class="space-y-4">
+            <div>
+                <label for="modalEventName" class="block text-sm font-medium text-gray-700 mb-2">Nombre del Evento: *</label>
+                <input type="text" id="modalEventName" name="modalEventName" 
+                       class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="Ingrese el nombre del evento" required>
+            </div>
+
+            <div>
+                <label for="modalEventTime" class="block text-sm font-medium text-gray-700 mb-2">Hora del Evento: *</label>
+                <input type="time" id="modalEventTime" name="modalEventTime" 
+                       class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </div>
+
+            <div>
+                <label for="modalEventDescription" class="block text-sm font-medium text-gray-700 mb-2">Descripción (Opcional):</label>
+                <textarea id="modalEventDescription" name="modalEventDescription" rows="3"
+                          class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Describa los detalles del evento..."></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button type="button" id="cancelEventForm" 
+                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                    Cancelar
+                </button>
+                <button type="button" id="saveEvent" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    Guardar Evento
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -489,6 +562,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedElement = null;
     let elementToDelete = null;
     let currentExpedienteId = null;
+
+    // Variables para el calendario
+    let calendarEvents = {}; // Stores events: { 'YYYY-MM-DD': [{ name: 'Event Name', description: 'Details' }] }
+    let selectedCalendarDate = null; // To store the date selected in the mini-calendar
 
     const leftPageTitle = document.getElementById('leftPageTitle');
     const contentSectionsLeft = {
@@ -517,11 +594,68 @@ document.addEventListener('DOMContentLoaded', function() {
     const addElementForm = document.getElementById('addElementForm');
     const elementTypeRadios = document.querySelectorAll('input[name="elementType"]');
     const hechoDetails = document.getElementById('hechoDetails');
-    
+
     // Elementos del árbol
     const treeContainer = document.getElementById('treeContainer');
     const consultationDetailTitle = document.getElementById('consultationDetailTitle');
     const consultationDetailText = document.getElementById('consultationDetailText');
+
+    // Calendar elements
+    const dayDetailModal = document.getElementById('dayDetailModal');
+    const dayDetailModalTitle = document.getElementById('dayDetailModalTitle');
+    const existingEventsContainer = document.getElementById('existingEventsContainer');
+    const eventsList = document.getElementById('eventsList');
+    const addAnotherEventBtn = document.getElementById('addAnotherEventBtn');
+    const eventForm = document.getElementById('eventForm');
+    const modalEventNameInput = document.getElementById('modalEventName');
+    const modalEventTimeInput = document.getElementById('modalEventTime');
+    const modalEventDescriptionInput = document.getElementById('modalEventDescription');
+    const closeDayDetailModalBtn = document.getElementById('closeDayDetailModal');
+    const cancelEventFormBtn = document.getElementById('cancelEventForm');
+    const saveEventBtn = document.getElementById('saveEvent');
+
+    // Variables para el calendario
+    let currentDate = new Date();
+    let datesWithEvents = [];
+    let editingEventId = null;
+
+    // Global functions for calendar events (needed for inline onclick handlers)
+    window.editEvent = function(id, name, time, description) {
+        editingEventId = id;
+        modalEventNameInput.value = name;
+        modalEventTimeInput.value = time;
+        modalEventDescriptionInput.value = description;
+        saveEventBtn.textContent = 'Actualizar Evento';
+        showEventForm();
+    };
+
+    window.deleteEvent = function(id) {
+        if (!confirm('¿Está seguro de que desea eliminar este evento?')) {
+            return;
+        }
+
+        fetch(`{{ url('/calendar/events') }}/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadEventsForDate(selectedCalendarDate);
+                loadCalendarEventDates();
+            } else {
+                alert('Error al eliminar el evento: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting event:', error);
+            alert('Error al eliminar el evento');
+        });
+    };
 
     function showContent(color) {
         // Oculta todos los contenidos
@@ -596,7 +730,8 @@ document.addEventListener('DOMContentLoaded', function() {
             selectElement(item, nodeDiv);
             if (item.children && item.children.length > 0) {
                 toggleChildren(div);
-                iconSpan.innerHTML = childrenDiv.classList.contains('hidden') ? '▶' : '▼';
+                const childrenDiv = div.querySelector('.tree-node-children');
+                iconSpan.innerHTML = childrenDiv && childrenDiv.classList.contains('hidden') ? '▶' : '▼';
             }
         };
 
@@ -837,7 +972,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Form submission for adding elements
     addElementForm.onsubmit = (e) => {
         e.preventDefault();
-        
+
         const formData = new FormData(addElementForm);
         const elementType = formData.get('elementType');
         const elementName = formData.get('elementName');
@@ -893,14 +1028,14 @@ document.addEventListener('DOMContentLoaded', function() {
         removeElementFromTree(treeData, elementToDelete.id);
         renderTree();
         saveTreeToDatabase();
-        
+
         // Clear detail panel if deleted element was selected
         if (selectedElement && selectedElement.id === elementToDelete.id) {
             consultationDetailTitle.textContent = 'Selecciona un elemento';
             consultationDetailText.innerHTML = '<p class="text-gray-600 text-center">Seleccione un elemento del árbol para ver sus detalles.</p>';
             selectedElement = null;
         }
-        
+
         closeDeleteModal();
     };
 
@@ -919,6 +1054,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to show messages
     function showMessage(text, type = 'success') {
+        if (!searchMessage) return;
         searchMessage.textContent = text;
         searchMessage.className = `mb-4 text-sm ${type === 'success' ? 'text-green-600' : 'text-red-600'}`;
         searchMessage.classList.remove('hidden');
@@ -932,21 +1068,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to clear form fields
     function clearForm() {
-        documentDescription.value = '';
-        fileNumberInput.value = '';
-        documentTypeInput.value = '';
-        documentDateInput.value = '';
-        registerBtn.disabled = true;
+        if (documentDescription) documentDescription.value = '';
+        if (fileNumberInput) fileNumberInput.value = '';
+        if (documentTypeInput) documentTypeInput.value = '';
+        if (documentDateInput) documentDateInput.value = '';
+        if (registerBtn) registerBtn.disabled = true;
         foundDocument = null;
     }
 
     // Function to fill form with document data
     function fillForm(document) {
-        documentDescription.value = document.description || '';
-        fileNumberInput.value = document.file_number || '';
-        documentTypeInput.value = document.type || '';
-        documentDateInput.value = document.reception_date || '';
-        registerBtn.disabled = false;
+        if (documentDescription) documentDescription.value = document.description || '';
+        if (fileNumberInput) fileNumberInput.value = document.file_number || '';
+        if (documentTypeInput) documentTypeInput.value = document.type || '';
+        if (documentDateInput) documentDateInput.value = document.reception_date || '';
+        if (registerBtn) registerBtn.disabled = false;
         foundDocument = document;
     }
 
@@ -954,7 +1090,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function searchDocumentByCode(code) {
         if (!code.trim()) {
             clearForm();
-            searchMessage.classList.add('hidden');
+            if (searchMessage) searchMessage.classList.add('hidden');
             return;
         }
 
@@ -1006,7 +1142,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (!pdfUpload.files[0]) {
+            if (!pdfUpload || !pdfUpload.files[0]) {
                 showMessage('Debe adjuntar un archivo PDF', 'error');
                 return;
             }
@@ -1036,7 +1172,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         documentSearchInput.value = '';
                         clearForm();
                         pdfUpload.value = '';
-                        document.getElementById('pdfPreview').classList.add('hidden');
+                        const pdfPreview = document.getElementById('pdfPreview');
+                        if (pdfPreview) pdfPreview.classList.add('hidden');
                     }, 2000);
                 } else {
                     showMessage(data.message || 'Error al registrar el expediente', 'error');
@@ -1059,14 +1196,20 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file) {
                 if (file.type === 'application/pdf') {
                     const fileURL = URL.createObjectURL(file);
-                    pdfPreview.src = fileURL;
-                    pdfPreview.classList.remove('hidden');
-                    pdfMessage.textContent = `Archivo seleccionado: ${file.name}`;
-                    pdfMessage.className = 'mt-2 text-xs text-green-600';
+                    if (pdfPreview) {
+                        pdfPreview.src = fileURL;
+                        pdfPreview.classList.remove('hidden');
+                    }
+                    if (pdfMessage) {
+                        pdfMessage.textContent = `Archivo seleccionado: ${file.name}`;
+                        pdfMessage.className = 'mt-2 text-xs text-green-600';
+                    }
                 } else {
-                    pdfPreview.classList.add('hidden');
-                    pdfMessage.textContent = 'Solo archivos .pdf son permitidos.';
-                    pdfMessage.className = 'mt-2 text-xs text-red-500';
+                    if (pdfPreview) pdfPreview.classList.add('hidden');
+                    if (pdfMessage) {
+                        pdfMessage.textContent = 'Solo archivos .pdf son permitidos.';
+                        pdfMessage.className = 'mt-2 text-xs text-red-500';
+                    }
                     pdfUpload.value = '';
                 }
             }
@@ -1077,11 +1220,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('close-btn')) {
         document.getElementById('close-btn').addEventListener('click', function() {
             if (confirm('¿Está seguro de que desea cerrar? Se perderán todos los datos no guardados.')) {
-                documentSearchInput.value = '';
+                if (documentSearchInput) documentSearchInput.value = '';
                 clearForm();
-                pdfUpload.value = '';
-                document.getElementById('pdfPreview').classList.add('hidden');
-                searchMessage.classList.add('hidden');
+                if (pdfUpload) pdfUpload.value = '';
+                const pdfPreview = document.getElementById('pdfPreview');
+                if (pdfPreview) pdfPreview.classList.add('hidden');
+                if (searchMessage) searchMessage.classList.add('hidden');
             }
         });
     }
@@ -1097,29 +1241,33 @@ document.addEventListener('DOMContentLoaded', function() {
         currentExpedienteId = expediente.id;
 
         // Update the expediente details view
-        document.getElementById('detailExpedienteNumber').textContent = expediente.numero_expediente;
-        document.getElementById('detailExpedienteDate').textContent = expediente.fecha_creacion;
+        const detailExpedienteNumber = document.getElementById('detailExpedienteNumber');
+        const detailExpedienteDate = document.getElementById('detailExpedienteDate');
+        if (detailExpedienteNumber) detailExpedienteNumber.textContent = expediente.numero_expediente;
+        if (detailExpedienteDate) detailExpedienteDate.textContent = expediente.fecha_creacion;
 
         const filesListElement = document.getElementById('filesList');
-        filesListElement.innerHTML = ''; // Clear previous list
+        if (filesListElement) {
+            filesListElement.innerHTML = ''; // Clear previous list
 
-        if (expediente.archivo_pdf) {
-            const listItem = document.createElement('li');
-            const fileLink = document.createElement('a');
-            const fileName = expediente.archivo_pdf.split('/').pop();
-            
-            fileLink.href = expediente.archivo_pdf;
-            fileLink.textContent = 'Ver PDF';
-            fileLink.className = 'text-blue-600 hover:underline';
-            fileLink.target = '_blank';
+            if (expediente.archivo_pdf) {
+                const listItem = document.createElement('li');
+                const fileLink = document.createElement('a');
+                const fileName = expediente.archivo_pdf.split('/').pop();
 
-            listItem.textContent = fileName;
-            listItem.appendChild(document.createTextNode(' '));
-            listItem.appendChild(fileLink);
+                fileLink.href = expediente.archivo_pdf;
+                fileLink.textContent = 'Ver PDF';
+                fileLink.className = 'text-blue-600 hover:underline';
+                fileLink.target = '_blank';
 
-            filesListElement.appendChild(listItem);
-        } else {
-            filesListElement.innerHTML = '<li class="text-gray-500">No hay archivos adjuntos para este expediente.</li>';
+                listItem.textContent = fileName;
+                listItem.appendChild(document.createTextNode(' '));
+                listItem.appendChild(fileLink);
+
+                filesListElement.appendChild(listItem);
+            } else {
+                filesListElement.innerHTML = '<li class="text-gray-500">No hay archivos adjuntos para este expediente.</li>';
+            }
         }
 
         showContent('orange');
@@ -1130,7 +1278,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentMonthYear = document.getElementById('currentMonthYear');
     const prevMonthBtn = document.getElementById('prevMonthBtn');
     const nextMonthBtn = document.getElementById('nextMonthBtn');
-    let currentDate = new Date();
+
+    function loadCalendarEventDates() {
+        fetch('{{ route("calendar.event-dates") }}', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                datesWithEvents = data.dates;
+                renderCalendar();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading calendar dates:', error);
+        });
+    }
 
     function renderCalendar() {
         if (!miniCalendarBody || !currentMonthYear) return;
@@ -1144,21 +1311,212 @@ document.addEventListener('DOMContentLoaded', function() {
         currentMonthYear.textContent = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(currentDate);
 
         miniCalendarBody.innerHTML = '';
-        const startDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+        const startDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Monday is 0
 
+        // Fill empty cells before the first day
         for (let i = 0; i < startDayOfWeek; i++) {
             miniCalendarBody.innerHTML += '<div></div>';
         }
 
+        // Fill the days of the month
         for (let i = 1; i <= lastDay.getDate(); i++) {
             const dayDiv = document.createElement('div');
+            const dayKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            
             dayDiv.className = 'calendar-day current-month';
             dayDiv.textContent = i;
+            dayDiv.dataset.date = dayKey;
+
+            // Add today's class
             if (year === new Date().getFullYear() && month === new Date().getMonth() && i === new Date().getDate()) {
                 dayDiv.classList.add('today');
             }
+
+            // Check if there are events for this day
+            if (datesWithEvents.includes(dayKey)) {
+                dayDiv.classList.add('has-event');
+            }
+
+            // Add click listener for day details
+            dayDiv.addEventListener('click', function() {
+                openDayDetailModal(dayKey, i);
+            });
+
             miniCalendarBody.appendChild(dayDiv);
         }
+    }
+
+    function openDayDetailModal(dateKey, dayOfMonth) {
+        selectedCalendarDate = dateKey;
+        editingEventId = null;
+        if (dayDetailModalTitle) {
+            dayDetailModalTitle.textContent = `Eventos para ${dayOfMonth} de ${currentMonthYear.textContent}`;
+        }
+        
+        // Clear form
+        clearEventForm();
+        
+        // Load events for this date
+        loadEventsForDate(dateKey);
+        
+        if (dayDetailModal) dayDetailModal.classList.add('show');
+    }
+
+    function loadEventsForDate(date) {
+        fetch(`{{ url('/calendar/events') }}/${date}`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayEvents(data.events);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading events:', error);
+        });
+    }
+
+    function displayEvents(events) {
+        if (!eventsList) return;
+        
+        eventsList.innerHTML = '';
+        
+        if (events.length > 0) {
+            if (existingEventsContainer) existingEventsContainer.classList.remove('hidden');
+            if (eventForm) eventForm.classList.add('hidden');
+            
+            events.forEach(event => {
+                const eventDiv = document.createElement('div');
+                eventDiv.className = 'border rounded-md p-3 bg-gray-50';
+                eventDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h5 class="font-medium text-gray-800">${event.event_name}</h5>
+                            <p class="text-sm text-gray-600">Hora: ${event.event_time}</p>
+                            ${event.event_description ? `<p class="text-sm text-gray-500 mt-1">${event.event_description}</p>` : ''}
+                        </div>
+                        <div class="flex gap-2 ml-4">
+                            <button onclick="editEvent(${event.id}, '${event.event_name}', '${event.event_time}', '${event.event_description || ''}')" 
+                                    class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                Editar
+                            </button>
+                            <button onclick="deleteEvent(${event.id})" 
+                                    class="text-red-600 hover:text-red-800 text-sm font-medium">
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                `;
+                eventsList.appendChild(eventDiv);
+            });
+        } else {
+            if (existingEventsContainer) existingEventsContainer.classList.add('hidden');
+            if (eventForm) eventForm.classList.remove('hidden');
+        }
+    }
+
+    function clearEventForm() {
+        if (modalEventNameInput) modalEventNameInput.value = '';
+        if (modalEventTimeInput) modalEventTimeInput.value = '';
+        if (modalEventDescriptionInput) modalEventDescriptionInput.value = '';
+        editingEventId = null;
+        
+        // Update button text
+        if (saveEventBtn) saveEventBtn.textContent = 'Guardar Evento';
+    }
+
+    function showEventForm() {
+        if (eventForm) eventForm.classList.remove('hidden');
+    }
+
+    function hideEventForm() {
+        if (eventForm) eventForm.classList.add('hidden');
+    }
+
+    function saveEvent() {
+        if (!modalEventNameInput || !modalEventTimeInput) return;
+        
+        const eventName = modalEventNameInput.value.trim();
+        const eventTime = modalEventTimeInput.value;
+        const eventDescription = modalEventDescriptionInput ? modalEventDescriptionInput.value.trim() : '';
+
+        if (!eventName) {
+            alert('El nombre del evento es obligatorio.');
+            modalEventNameInput.focus();
+            return;
+        }
+
+        if (!eventTime) {
+            alert('La hora del evento es obligatoria.');
+            modalEventTimeInput.focus();
+            return;
+        }
+
+        const eventData = {
+            event_date: selectedCalendarDate,
+            event_time: eventTime,
+            event_name: eventName,
+            event_description: eventDescription
+        };
+
+        const url = editingEventId ? 
+            `{{ url('/calendar/events') }}/${editingEventId}` : 
+            '{{ route("calendar.events.store") }}';
+        
+        const method = editingEventId ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(eventData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                hideEventForm();
+                loadEventsForDate(selectedCalendarDate);
+                loadCalendarEventDates();
+            } else {
+                alert('Error al guardar el evento: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving event:', error);
+            alert('Error al guardar el evento');
+        });
+    }
+
+    // Event listeners
+    if (addAnotherEventBtn) addAnotherEventBtn.addEventListener('click', showEventForm);
+    if (saveEventBtn) saveEventBtn.addEventListener('click', saveEvent);
+    if (cancelEventFormBtn) cancelEventFormBtn.addEventListener('click', hideEventForm);
+
+    // Close modal handlers
+    if (closeDayDetailModalBtn) {
+        closeDayDetailModalBtn.onclick = () => {
+            if (dayDetailModal) dayDetailModal.classList.remove('show');
+            selectedCalendarDate = null;
+            editingEventId = null;
+        };
+    }
+
+    // Modal to close on outside click
+    if (dayDetailModal) {
+        dayDetailModal.onclick = (e) => {
+            if (e.target === dayDetailModal) {
+                if (closeDayDetailModalBtn) closeDayDetailModalBtn.onclick();
+            }
+        };
     }
 
     if (prevMonthBtn && nextMonthBtn) {
@@ -1173,13 +1531,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    renderCalendar();
+    // Initial render of the calendar
+    loadCalendarEventDates();
 
     // Event listeners para filas de expedientes
     document.addEventListener('click', function(e) {
         if (e.target.closest('.selectable-row')) {
             const row = e.target.closest('.selectable-row');
             const expedienteId = row.dataset.expedienteId;
+
+            if (!expedienteId) return;
 
             // Fetch expediente details via AJAX
             fetch(`{{ url('/api/expedientes') }}/${expedienteId}/detalles`, {
@@ -1202,6 +1563,111 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // --- Calendar Deadline Calculation ---
+    const receptionDateInput = document.getElementById('receptionDate');
+    const receptionTimeInput = document.getElementById('receptionTime');
+    const alertTypeSelect = document.getElementById('alertTypeSelect');
+    const calculateDeadlineBtn = document.getElementById('calculateDeadlineBtn');
+    const deadlineResultSpan = document.getElementById('deadlineResult');
+    const alertStatusSpan = document.getElementById('alertStatus');
+
+    if (calculateDeadlineBtn) {
+        calculateDeadlineBtn.addEventListener('click', () => {
+            if (!receptionDateInput || !receptionTimeInput || !alertTypeSelect) return;
+            
+            const receptionDate = receptionDateInput.value;
+            const receptionTime = receptionTimeInput.value;
+            const alertType = alertTypeSelect.value;
+
+            if (!receptionDate || !receptionTime) {
+                alert('Por favor, ingrese la fecha y hora de recepción.');
+                return;
+            }
+
+            const [hours, minutes] = receptionTime.split(':').map(Number);
+            const receptionDateTime = new Date(receptionDate);
+            receptionDateTime.setHours(hours);
+            receptionDateTime.setMinutes(minutes);
+
+            let deadline = new Date(receptionDateTime);
+            let status = '';
+
+            switch (alertType) {
+                case 'radicacion': // 24 hours
+                    deadline.setHours(deadline.getHours() + 24);
+                    status = 'Radicación';
+                    break;
+                case 'incidente': // Assuming 3 business days (Mon-Fri)
+                    for (let i = 0; i < 3; i++) {
+                        deadline.setDate(deadline.getDate() + 1);
+                        // Skip weekends
+                        if (deadline.getDay() === 0) deadline.setDate(deadline.getDate() + 1); // Sunday
+                        if (deadline.getDay() === 6) deadline.setDate(deadline.getDate() + 2); // Saturday
+                    }
+                    status = 'Incidente';
+                    break;
+                case 'revision': // Assuming 5 business days
+                    for (let i = 0; i < 5; i++) {
+                        deadline.setDate(deadline.getDate() + 1);
+                        if (deadline.getDay() === 0) deadline.setDate(deadline.getDate() + 1);
+                        if (deadline.getDay() === 6) deadline.setDate(deadline.getDate() + 2);
+                    }
+                    status = 'Revisión';
+                    break;
+                case 'sentencia': // Assuming 10 business days
+                    for (let i = 0; i < 10; i++) {
+                        deadline.setDate(deadline.getDate() + 1);
+                        if (deadline.getDay() === 0) deadline.setDate(deadline.getDate() + 1);
+                        if (deadline.getDay() === 6) deadline.setDate(deadline.getDate() + 2);
+                    }
+                    status = 'Sentencia';
+                    break;
+                case 'caducidad': // Assuming 30 calendar days
+                    deadline.setDate(deadline.getDate() + 30);
+                    status = 'Caducidad';
+                    break;
+                default:
+                    break;
+            }
+
+            // Format the deadline date and time
+            const formattedDeadline = `${String(deadline.getDate()).padStart(2, '0')}/${String(deadline.getMonth() + 1).padStart(2, '0')}/${deadline.getFullYear()} ${String(deadline.getHours()).padStart(2, '0')}:${String(deadline.getMinutes()).padStart(2, '0')}`;
+
+            if (deadlineResultSpan) deadlineResultSpan.textContent = formattedDeadline;
+            if (alertStatusSpan) alertStatusSpan.textContent = status;
+
+            // Add the calculated deadline to the calendar as an event
+            const deadlineDateKey = `${deadline.getFullYear()}-${String(deadline.getMonth() + 1).padStart(2, '0')}-${String(deadline.getDate()).padStart(2, '0')}`;
+            const eventData = {
+                event_date: deadlineDateKey,
+                event_time: `${String(deadline.getHours()).padStart(2, '0')}:${String(deadline.getMinutes()).padStart(2, '0')}`,
+                event_name: `Alerta: ${status}`,
+                event_description: `Fecha Límite: ${formattedDeadline}`
+            };
+
+            // Save the event to the database
+            fetch('{{ route("calendar.events.store") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(eventData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadCalendarEventDates(); // Refresh calendar to show new event
+                }
+            })
+            .catch(error => {
+                console.error('Error saving deadline event:', error);
+            });
+        });
+    }
 
     // Muestra el contenido de la pestaña roja por defecto al cargar la página
     showContent('red');

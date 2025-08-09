@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Expediente;
+use App\Models\CalendarEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -317,6 +318,180 @@ class ExpedienteController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al cargar el árbol: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a calendar event
+     */
+    public function storeCalendarEvent(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'event_date' => 'required|date',
+                'event_time' => 'required|date_format:H:i',
+                'event_name' => 'required|string|max:255',
+                'event_description' => 'nullable|string|max:1000'
+            ], [
+                'event_date.required' => 'La fecha del evento es obligatoria.',
+                'event_time.required' => 'La hora del evento es obligatoria.',
+                'event_time.date_format' => 'La hora debe tener el formato HH:MM.',
+                'event_name.required' => 'El nombre del evento es obligatorio.',
+                'event_name.max' => 'El nombre del evento no puede superar los 255 caracteres.',
+                'event_description.max' => 'La descripción no puede superar los 1000 caracteres.'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first()
+                ], 422);
+            }
+
+            $event = CalendarEvent::create([
+                'event_date' => $request->event_date,
+                'event_time' => $request->event_time,
+                'event_name' => $request->event_name,
+                'event_description' => $request->event_description
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evento creado exitosamente.',
+                'event' => [
+                    'id' => $event->id,
+                    'event_date' => $event->event_date->format('Y-m-d'),
+                    'event_time' => $event->formatted_time,
+                    'event_name' => $event->event_name,
+                    'event_description' => $event->event_description
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el evento: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get events for a specific date
+     */
+    public function getCalendarEvents($date)
+    {
+        try {
+            $events = CalendarEvent::getEventsForDate($date);
+            
+            $eventsData = $events->map(function($event) {
+                return [
+                    'id' => $event->id,
+                    'event_date' => $event->event_date->format('Y-m-d'),
+                    'event_time' => $event->formatted_time,
+                    'event_name' => $event->event_name,
+                    'event_description' => $event->event_description
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'events' => $eventsData
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cargar los eventos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a calendar event
+     */
+    public function updateCalendarEvent(Request $request, $id)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'event_time' => 'required|date_format:H:i',
+                'event_name' => 'required|string|max:255',
+                'event_description' => 'nullable|string|max:1000'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first()
+                ], 422);
+            }
+
+            $event = CalendarEvent::findOrFail($id);
+            $event->update([
+                'event_time' => $request->event_time,
+                'event_name' => $request->event_name,
+                'event_description' => $request->event_description
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evento actualizado exitosamente.',
+                'event' => [
+                    'id' => $event->id,
+                    'event_date' => $event->event_date->format('Y-m-d'),
+                    'event_time' => $event->formatted_time,
+                    'event_name' => $event->event_name,
+                    'event_description' => $event->event_description
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el evento: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a calendar event
+     */
+    public function deleteCalendarEvent($id)
+    {
+        try {
+            $event = CalendarEvent::findOrFail($id);
+            $event->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evento eliminado exitosamente.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el evento: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all dates with events for calendar visualization
+     */
+    public function getCalendarEventDates()
+    {
+        try {
+            $dates = CalendarEvent::getDatesWithEvents();
+            
+            return response()->json([
+                'success' => true,
+                'dates' => $dates
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cargar las fechas: ' . $e->getMessage()
             ], 500);
         }
     }

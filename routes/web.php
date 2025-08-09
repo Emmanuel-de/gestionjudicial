@@ -49,4 +49,11 @@ Route::get('/expedientes/{expediente}/pdf', [ExpedienteController::class, 'mostr
 Route::post('/expedientes/tree/store', [ExpedienteController::class, 'storeTree'])->name('expedientes.tree.store');
 Route::get('/api/expedientes/{id}/tree', [ExpedienteController::class, 'getTree']);
 
+// Calendar events routes
+Route::post('/calendar/events', [ExpedienteController::class, 'storeCalendarEvent'])->name('calendar.events.store');
+Route::get('/calendar/events/{date}', [ExpedienteController::class, 'getCalendarEvents'])->name('calendar.events.get');
+Route::put('/calendar/events/{id}', [ExpedienteController::class, 'updateCalendarEvent'])->name('calendar.events.update');
+Route::delete('/calendar/events/{id}', [ExpedienteController::class, 'deleteCalendarEvent'])->name('calendar.events.delete');
+Route::get('/calendar/event-dates', [ExpedienteController::class, 'getCalendarEventDates'])->name('calendar.event-dates');
+
 

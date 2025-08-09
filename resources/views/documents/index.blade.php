@@ -20,7 +20,10 @@
   <button class="w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 transition-colors duration-200"></button>
 </a>
 
-                <button class="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors duration-200"></button>
+                <a href="https://docs.google.com/document/d/1L4C4Dn5qfPpiZG2hNlAYsLTIPjZHG_JG7UMhjTiULTQ/edit?tab=t.0" target="_blank">
+                  <button class="w-6 h-6 rounded-full bg-blue-500 hover:bg-blue-600 transition-colors duration-200"></button>
+                </a>
+
             </div>
         </header>
 
