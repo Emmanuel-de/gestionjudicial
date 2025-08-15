@@ -335,7 +335,7 @@
                         @csrf
                         <input type="text" id="numero_expediente" name="numero_expediente" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Número de Expediente" readonly>
                         <input type="text" id="tipo_documento" name="tipo_documento" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Tipo de Documento" readonly>
-                        <input type="text" id="fecha_creacion" name="fecha_creacion" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-6 md:mb-8" placeholder="dd/mm/aaaa" readonly>
+                        <input type="date" id="fecha_creacion" name="fecha_creacion" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" required>
 
                         <!-- Contenedor para los botones -->
                         <div class="flex space-x-4">
@@ -427,7 +427,7 @@
 
             <div class="mb-4">
                 <label for="elementName" class="block text-sm font-medium text-gray-700 mb-2">Nombre:</label>
-                <input type="text" id="elementName" name="elementName" 
+                <input type="text" id="elementName" name="elementName"
                        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                        placeholder="Ingrese el nombre del elemento" required>
             </div>
@@ -446,11 +446,11 @@
             </div>
 
             <div class="flex justify-end gap-2">
-                <button type="button" id="cancelModal" 
+                <button type="button" id="cancelModal"
                         class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
                     Cancelar
                 </button>
-                <button type="submit" 
+                <button type="submit"
                         class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                     Agregar
                 </button>
@@ -474,7 +474,7 @@
         </div>
 
         <div class="flex justify-end gap-2">
-            <button type="button" id="cancelDelete" 
+            <button type="button" id="cancelDelete"
                     class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
                 Cancelar
             </button>
@@ -496,7 +496,7 @@
 
         <div class="mb-4">
             <label for="modalEventName" class="block text-sm font-medium text-gray-700 mb-2">Nombre del Evento/Archivo:</label>
-            <input type="text" id="modalEventName" name="modalEventName" 
+            <input type="text" id="modalEventName" name="modalEventName"
                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                    placeholder="Ingrese el nombre del evento o archivo">
         </div>
@@ -509,11 +509,11 @@
         </div>
 
         <div class="flex justify-end gap-2">
-            <button type="button" id="cancelDayDetailModal" 
+            <button type="button" id="cancelDayDetailModal"
                     class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
                 Cancelar
             </button>
-            <button type="button" id="saveDayDetail" 
+            <button type="button" id="saveDayDetail"
                     class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
                 Guardar
             </button>
@@ -545,7 +545,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let calendarEvents = {}; // Stores events: { 'YYYY-MM-DD': [{ name: 'Event Name', description: 'Details' }] }
     let selectedCalendarDate = null; // To store the date selected in the mini-calendar
 
-    const leftPageTitle = document.getElementById('leftPageTitle');
     const contentSectionsLeft = {
         'red': document.getElementById('pageContentExpediente'),
         'orange': document.getElementById('pageContentExpedientesList'),
@@ -603,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Actualiza el título de la página izquierda
-        leftPageTitle.textContent = tabTitles[color];
+        document.getElementById('leftPageTitle').textContent = tabTitles[color];
     }
 
     // Funciones para el árbol mejorado
@@ -1000,9 +999,15 @@ document.addEventListener('DOMContentLoaded', function() {
         documentDescription.value = '';
         fileNumberInput.value = '';
         documentTypeInput.value = '';
-        documentDateInput.value = '';
-        registerBtn.disabled = true;
+        // Set current date as default
+        const today = new Date().toISOString().split('T')[0];
+        documentDateInput.value = today;
         foundDocument = null;
+        registerBtn.disabled = true;
+
+        if (pdfUpload) {
+            pdfUpload.value = '';
+        }
     }
 
     // Function to fill form with document data
@@ -1010,9 +1015,21 @@ document.addEventListener('DOMContentLoaded', function() {
         documentDescription.value = document.description || '';
         fileNumberInput.value = document.file_number || '';
         documentTypeInput.value = document.type || '';
-        documentDateInput.value = document.reception_date || '';
-        registerBtn.disabled = false;
+
+        // Convert date format if needed (from dd/mm/yyyy to yyyy-mm-dd for date input)
+        if (document.reception_date) {
+            const dateParts = document.reception_date.split(' ')[0].split('/');
+            if (dateParts.length === 3) {
+                const formattedDate = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+                documentDateInput.value = formattedDate;
+            }
+        } else {
+            // Set current date as default
+            const today = new Date().toISOString().split('T')[0];
+            documentDateInput.value = today;
+        }
         foundDocument = document;
+        registerBtn.disabled = false;
     }
 
     // Search for document by code
@@ -1220,7 +1237,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 1; i <= lastDay.getDate(); i++) {
             const dayDiv = document.createElement('div');
             const dayKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-            
+
             dayDiv.className = 'calendar-day current-month';
             dayDiv.textContent = i;
             dayDiv.dataset.date = dayKey;
@@ -1248,7 +1265,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function openDayDetailModal(dateKey, dayOfMonth) {
         selectedCalendarDate = dateKey;
         dayDetailModalTitle.textContent = `Detalles para ${dayOfMonth} de ${currentMonthYear.textContent}`;
-        
+
         const eventsForDay = calendarEvents[dateKey] || [];
         modalEventNameInput.value = eventsForDay.length > 0 ? eventsForDay[0].name : '';
         modalEventDescriptionInput.value = eventsForDay.length > 0 ? eventsForDay[0].description : '';
@@ -1417,44 +1434,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Add the calculated deadline to the calendar as an event
         const deadlineDateKey = `${deadline.getFullYear()}-${String(deadline.getMonth() + 1).padStart(2, '0')}-${String(deadline.getDate()).padStart(2, '0')}`;
-        const eventData = {
-            event_date: deadlineDateKey,
-            event_time: `${String(deadline.getHours()).padStart(2, '0')}:${String(deadline.getMinutes()).padStart(2, '0')}`,
-            event_name: `Alerta: ${status}`,
-            event_description: `Fecha Límite: ${formattedDeadline}`
-        };
-
-        // Save the event to the database
-        fetch('{{ route("calendar.events.store") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify(eventData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                loadCalendarEventDates(); // Refresh calendar to show new event
-            }
-        })
-        .catch(error => {
-            console.error('Error saving deadline event:', error);
-        });
-    });
-        // Format the deadline date and time
-        const formattedDeadline = `${String(deadline.getDate()).padStart(2, '0')}/${String(deadline.getMonth() + 1).padStart(2, '0')}/${deadline.getFullYear()} ${String(deadline.getHours()).padStart(2, '0')}:${String(deadline.getMinutes()).padStart(2, '0')}`;
-
-        deadlineResultSpan.textContent = formattedDeadline;
-        alertStatusSpan.textContent = status;
-
-        // Add the calculated deadline to the calendar as an event
-        const deadlineDateKey = `${deadline.getFullYear()}-${String(deadline.getMonth() + 1).padStart(2, '0')}-${String(deadline.getDate()).padStart(2, '0')}`;
         if (!calendarEvents[deadlineDateKey]) {
-            calendarEvents[deadlineKey] = [];
+            calendarEvents[deadlineDateKey] = [];
         }
         // Add event, preventing duplicates for the same type
         const eventExists = calendarEvents[deadlineDateKey].some(event => event.name === `Alerta: ${status}`);
@@ -1464,7 +1445,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 description: `Fecha Límite: ${formattedDeadline}`
             });
         }
-        
+
         renderCalendar(); // Re-render to show the new event indicator
     });
 

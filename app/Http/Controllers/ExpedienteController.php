@@ -33,6 +33,20 @@ class ExpedienteController extends Controller
      */
     public function store(Request $request)
     {
+        // Convert date from dd/mm/yyyy to yyyy-mm-dd format if needed
+        if ($request->fecha_creacion && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $request->fecha_creacion)) {
+            // Check if it's in dd/mm/yyyy format
+            if (preg_match('/^\d{2}\/\d{2}\/\d{4}/', $request->fecha_creacion)) {
+                // Extract just the date part (remove time if present)
+                $dateOnly = explode(' ', $request->fecha_creacion)[0];
+                $dateParts = explode('/', $dateOnly);
+                if (count($dateParts) === 3) {
+                    $convertedDate = $dateParts[2] . '-' . str_pad($dateParts[1], 2, '0', STR_PAD_LEFT) . '-' . str_pad($dateParts[0], 2, '0', STR_PAD_LEFT);
+                    $request->merge(['fecha_creacion' => $convertedDate]);
+                }
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'numero_expediente' => 'required|string|max:255|unique:expedientes,numero_expediente',
             'tipo_documento' => 'required|string|max:255',
@@ -56,7 +70,7 @@ class ExpedienteController extends Controller
                     'message' => 'Errores de validación: ' . $validator->errors()->first()
                 ], 422);
             }
-            
+
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput()
@@ -131,6 +145,20 @@ class ExpedienteController extends Controller
      */
     public function update(Request $request, Expediente $expediente)
     {
+        // Convert date from dd/mm/yyyy to yyyy-mm-dd format if needed
+        if ($request->fecha_creacion && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $request->fecha_creacion)) {
+            // Check if it's in dd/mm/yyyy format
+            if (preg_match('/^\d{2}\/\d{2}\/\d{4}/', $request->fecha_creacion)) {
+                // Extract just the date part (remove time if present)
+                $dateOnly = explode(' ', $request->fecha_creacion)[0];
+                $dateParts = explode('/', $dateOnly);
+                if (count($dateParts) === 3) {
+                    $convertedDate = $dateParts[2] . '-' . str_pad($dateParts[1], 2, '0', STR_PAD_LEFT) . '-' . str_pad($dateParts[0], 2, '0', STR_PAD_LEFT);
+                    $request->merge(['fecha_creacion' => $convertedDate]);
+                }
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'numero_expediente' => 'required|string|max:255|unique:expedientes,numero_expediente,' . $expediente->id,
             'tipo_documento' => 'required|string|max:255',
@@ -207,7 +235,7 @@ class ExpedienteController extends Controller
     public function buscar(Request $request)
     {
         $termino = $request->get('q');
-        
+
         $expedientes = Expediente::activos()
             ->buscarPorNumero($termino)
             ->orWhere('tipo_documento', 'like', '%' . $termino . '%')
@@ -225,7 +253,7 @@ class ExpedienteController extends Controller
     {
         try {
             $expediente = Expediente::findOrFail($id);
-            
+
             return response()->json([
                 'success' => true,
                 'expediente' => [
@@ -383,7 +411,7 @@ class ExpedienteController extends Controller
     {
         try {
             $events = CalendarEvent::getEventsForDate($date);
-            
+
             $eventsData = $events->map(function($event) {
                 return [
                     'id' => $event->id,
@@ -482,7 +510,7 @@ class ExpedienteController extends Controller
     {
         try {
             $dates = CalendarEvent::getDatesWithEvents();
-            
+
             return response()->json([
                 'success' => true,
                 'dates' => $dates
